@@ -415,7 +415,7 @@ function Toast({ msg }) {
 }
 
 // ---------- Org card (with generated cover art header) ----------
-function OrgCard({ org, match, following, onFollow, onOpen }) {
+function OrgCard({ org, match, following, onFollow, onOpen, primaryLabel = "Explore" }) {
   const m = CAUSE[org.cause];
   return (
     <article onClick={onOpen} className="sc-tap" style={{ background: C.card, border: "1px solid " + C.line,
@@ -452,7 +452,7 @@ function OrgCard({ org, match, following, onFollow, onOpen }) {
               color: following ? C.mute : C.bg }}>{following ? "Following" : "Follow"}</button>
           <button onClick={(e) => { e.stopPropagation(); onOpen(); }} className="sc-tap"
             style={{ flex: 1, padding: "9px", borderRadius: 9, fontSize: 12.5, fontWeight: 700, cursor: "pointer",
-              border: "none", background: m.c, color: "#fff" }}>{org.demo ? "Support" : "Explore"}</button>
+              border: "none", background: m.c, color: "#fff" }}>{org.demo ? "Support" : primaryLabel}</button>
         </div>
       </div>
     </article>
@@ -835,27 +835,63 @@ function HomePage({ giver, follows, onFollow, onOpen }) {
 }
 
 function GivePage({ giver, follows, onFollow, onOpen }) {
-  const urgent = ORGS.filter((o) => o.urgent).map((o) => ({ o, m: scoreMatch(giver, o) })).sort((a, b) => b.m.score - a.m.score);
+  const [query, setQuery] = useState("");
+  const urgent = useMemo(() => {
+    const term = query.trim().toLowerCase();
+    return ORGS.filter((o) => o.urgent && (!term || `${o.name} ${o.cause} ${o.loc} ${o.blurb}`.toLowerCase().includes(term)))
+      .map((o) => ({ o, m: scoreMatch(giver, o) })).sort((a, b) => b.m.score - a.m.score);
+  }, [giver, query]);
   return (
     <div style={{ padding: "4px 16px 16px" }}>
-      <SectionRule>Give — urgent causes</SectionRule>
+      <SectionRule>Give to an organization</SectionRule>
       <div style={{ display: "flex", gap: 10, alignItems: "center", background: C.rust + "1a", border: "1px solid " + C.rust + "55", borderRadius: 12, padding: 13, marginBottom: 18 }}>
-        <Zap size={20} color={C.ember} /><div style={{ fontSize: 12.5, color: C.mute }}>Time-sensitive requests, ranked by how well they fit your giving profile.</div></div>
+        <Zap size={20} color={C.ember} /><div style={{ fontSize: 12.5, color: C.mute }}>Donate, volunteer, sponsor, or contribute goods to time-sensitive nonprofit work.</div></div>
+      <SearchBox value={query} onChange={setQuery} placeholder="Search organizations, causes, or locations…" />
+      <div style={{ fontSize: 12, color: C.faint, margin: "-7px 2px 13px" }}>{urgent.length} urgent organization{urgent.length === 1 ? "" : "s"}</div>
       <div className="sc-stagger" style={{ display: "grid", gap: 14 }}>
-        {urgent.map(({ o, m }) => <OrgCard key={o.id} org={o} match={m} following={follows.has(o.id)} onFollow={onFollow} onOpen={() => onOpen(o)} />)}</div>
+        {urgent.map(({ o, m }) => <OrgCard key={o.id} org={o} match={m} following={follows.has(o.id)} onFollow={onFollow} onOpen={() => onOpen(o)} primaryLabel="Support" />)}
+        {!urgent.length && <EmptySearch label="No urgent organizations match that search." />}</div>
     </div>
   );
 }
 
 function FindHelpPage({ follows, onFollow, onOpen }) {
-  const help = ORGS.filter((o) => ["Housing", "Hunger", "Health", "Water"].includes(o.cause) && !o.demo);
+  const [query, setQuery] = useState("");
+  const [need, setNeed] = useState("All");
+  const needs = ["All", "Housing", "Hunger", "Health", "Water"];
+  const help = useMemo(() => {
+    const term = query.trim().toLowerCase();
+    return ORGS.filter((o) => ["Housing", "Hunger", "Health", "Water"].includes(o.cause) && !o.demo)
+      .filter((o) => need === "All" || o.cause === need)
+      .filter((o) => !term || `${o.name} ${o.cause} ${o.loc} ${o.blurb}`.toLowerCase().includes(term));
+  }, [need, query]);
   return (
     <div style={{ padding: "4px 16px 16px" }}>
-      <SectionRule>Find help</SectionRule>
-      <p style={{ fontSize: 13, color: C.mute, margin: "0 0 16px", lineHeight: 1.5 }}>Organizations offering direct assistance — food, shelter, water, and medical care.</p>
-      <div className="sc-stagger" style={{ display: "grid", gap: 14 }}>{help.map((o) => <OrgCard key={o.id} org={o} following={follows.has(o.id)} onFollow={onFollow} onOpen={() => onOpen(o)} />)}</div>
+      <SectionRule>Find services for yourself</SectionRule>
+      <p style={{ fontSize: 13, color: C.mute, margin: "0 0 14px", lineHeight: 1.5 }}>This section is for getting assistance, not giving. Search organizations that provide food, housing, clean water, or medical services.</p>
+      <SearchBox value={query} onChange={setQuery} placeholder="Search help by organization or location…" />
+      <FilterRow label="What do you need?">{needs.map((item) => <Chip key={item} active={need === item} onClick={() => setNeed(item)}>{item === "Hunger" ? "Food" : item === "Health" ? "Medical" : item}</Chip>)}</FilterRow>
+      <div style={{ fontSize: 12, color: C.faint, margin: "4px 2px 13px" }}>{help.length} service provider{help.length === 1 ? "" : "s"}</div>
+      <div className="sc-stagger" style={{ display: "grid", gap: 14 }}>
+        {help.map((o) => <OrgCard key={o.id} org={o} following={follows.has(o.id)} onFollow={onFollow} onOpen={() => onOpen(o)} primaryLabel="View services" />)}
+        {!help.length && <EmptySearch label="No service providers match those filters." />}
+      </div>
     </div>
   );
+}
+
+function SearchBox({ value, onChange, placeholder }) {
+  return <div style={{ display: "flex", alignItems: "center", gap: 10, background: C.paper2, border: "1.5px solid " + C.line2, borderRadius: 11, padding: "11px 13px", marginBottom: 14 }}>
+    <Search size={17} color={C.mute} />
+    <input value={value} onChange={(event) => onChange(event.target.value)} placeholder={placeholder} aria-label={placeholder} style={inputStyle} />
+    {value && <button aria-label="Clear search" onClick={() => onChange("")} style={{ border: 0, background: "none", padding: 0, display: "grid", cursor: "pointer" }}><X size={16} color={C.mute} /></button>}
+  </div>;
+}
+
+function EmptySearch({ label }) {
+  return <div style={{ textAlign: "center", padding: "34px 18px", color: C.mute, border: "1px dashed " + C.line2, borderRadius: 14 }}>
+    <Search size={25} style={{ opacity: .45 }} /><p style={{ fontSize: 13, margin: "9px 0 0" }}>{label}</p>
+  </div>;
 }
 
 function ConnectPage({ giver, setGiver, follows, onFollow, onOpen }) {
@@ -1060,7 +1096,7 @@ export default function ShareCompass({ userId, profile, saveProfile, community, 
   const frame = (inner) => (
     <div style={{ ...themeVars, minHeight: "100vh", background: outer, display: "grid", placeItems: "center", padding: 20, fontFamily: "'DM Sans', -apple-system, system-ui, sans-serif", transition: "background .25s ease" }}>
       <MotionStyles />
-      <div style={{ width: 400, maxWidth: "100%", height: 820, background: C.paper, color: C.cream, borderRadius: 30, overflow: "hidden", position: "relative", display: "flex", flexDirection: "column", boxShadow: `0 30px 90px ${shadow}`, border: "1px solid " + C.line }}>
+      <div className="sc-phone" style={{ width: 400, maxWidth: "100%", height: "min(820px, calc(100dvh - 40px))", background: C.paper, color: C.cream, borderRadius: 30, overflow: "hidden", position: "relative", display: "flex", flexDirection: "column", boxShadow: `0 30px 90px ${shadow}`, border: "1px solid " + C.line }}>
         {inner}<Toast msg={toast} /></div>
     </div>
   );
