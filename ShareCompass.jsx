@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import {
   Home, Gift, Link2, HandHeart, User, Search, MapPin, Sparkles, Check,
-  X, Zap, BarChart3, Compass, ArrowRight, ArrowLeft, Mail,
+  X, BarChart3, Compass, ArrowRight, ArrowLeft, Mail,
   Phone, Lock, Globe2, CalendarClock, Settings, LogOut, ChevronRight,
   Eye, EyeOff, RefreshCw, PartyPopper, Bell, DollarSign, Clock, Package,
   Heart, ShieldCheck, ChevronDown, Sun, Moon, Users, UserPlus,
@@ -12,7 +12,7 @@ import { sendPasswordResetEmail } from "firebase/auth";
 import { auth } from "./firebase.js";
 
 /*
-  ShareCompass v2 — worldwide giving platform (single-file React demo).
+  ShareCompass v2, a worldwide giving platform.
 
   HONESTY / BACKEND NOTES
    - Orgs with real:true are real, verifiable nonprofits (focus & domains accurate;
@@ -49,14 +49,14 @@ const THEMES = {
 
 // Cause -> accent + a two-color scene gradient for generated cover art
 const CAUSE = {
-  Disaster:  { c: C.rust,  g: ["#7A2E1A", "#D2683C"], tag: "Emergency response" },
-  Hunger:    { c: C.pine,  g: ["#274237", "#6BA88C"], tag: "Food & nutrition" },
-  Housing:   { c: C.slate, g: ["#2A3E4C", "#6E92AC"], tag: "Shelter & housing" },
-  Health:    { c: C.pine,  g: ["#26433A", "#5FA88E"], tag: "Medical aid" },
-  Water:     { c: C.slate, g: ["#233A44", "#5C8FA6"], tag: "Clean water" },
-  Children:  { c: C.rust,  g: ["#6E3320", "#E08A4B"], tag: "Children & family" },
-  Refugees:  { c: C.gold,  g: ["#6B4E1C", "#D9A441"], tag: "Displacement & refuge" },
-  Education: { c: C.gold,  g: ["#5A4A22", "#D9A441"], tag: "Learning & schools" },
+  Disaster:  { c: C.rust,  g: ["#7A2E1A", "#D2683C"], tag: "Emergency response", image: "https://image.thum.io/get/width/700/crop/420/noanimate/https://teamrubiconusa.org" },
+  Hunger:    { c: C.pine,  g: ["#274237", "#6BA88C"], tag: "Food and nutrition", image: "https://image.thum.io/get/width/700/crop/420/noanimate/https://feedingamerica.org" },
+  Housing:   { c: C.slate, g: ["#2A3E4C", "#6E92AC"], tag: "Housing support", image: "https://image.thum.io/get/width/700/crop/420/noanimate/https://habitat.org" },
+  Health:    { c: C.pine,  g: ["#26433A", "#5FA88E"], tag: "Medical care", image: "https://image.thum.io/get/width/700/crop/420/noanimate/https://directrelief.org" },
+  Water:     { c: C.slate, g: ["#233A44", "#5C8FA6"], tag: "Clean water", image: "https://image.thum.io/get/width/700/crop/420/noanimate/https://water.org" },
+  Children:  { c: C.rust,  g: ["#6E3320", "#E08A4B"], tag: "Children and families", image: "https://image.thum.io/get/width/700/crop/420/noanimate/https://savethechildren.org" },
+  Refugees:  { c: C.gold,  g: ["#6B4E1C", "#D9A441"], tag: "Refugee support", image: "https://image.thum.io/get/width/700/crop/420/noanimate/https://rescue.org" },
+  Education: { c: C.gold,  g: ["#5A4A22", "#D9A441"], tag: "Schools and learning", image: "https://image.thum.io/get/width/700/crop/420/noanimate/https://roomtoread.org" },
 };
 const GEO = {
   US: { name: "United States", dial: "+1", regions: US_STATES, cities: [] },
@@ -157,7 +157,7 @@ const CORE_ORGS = [
     blurb: "One of the world's largest development organizations, running schools, microfinance, and health programs across the Global South." },
   { id: 11, real: true, name: "UNICEF", handle: "unicef.org", loc: "Global", region: "global", country: "US",
     cause: "Children", urgent: true, types: ["Money", "Sponsor"], following: 40200, need: 86, image: null,
-    blurb: "Works in over 190 countries to protect the rights of every child — health, nutrition, education, and emergency relief." },
+    blurb: "Works in over 190 countries to protect children's rights through health, nutrition, education, and emergency relief." },
   { id: 12, real: true, name: "Doctors Without Borders", handle: "msf.org", loc: "Global", region: "global", country: "FR",
     cause: "Health", urgent: true, types: ["Money"], following: 28900, need: 91, image: null,
     blurb: "Delivers emergency medical care to people affected by conflict, epidemics, and disasters, independent of politics." },
@@ -247,7 +247,7 @@ function Crest({ org, size = 48, radius = 12 }) {
     <div style={{ width: size, height: size, borderRadius: radius, overflow: "hidden", flexShrink: 0, position: "relative" }}>
       <CoverArt org={org} height={size} radius={radius} />
       <div style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center",
-        fontFamily: "Georgia, serif", fontWeight: 700, fontSize: size * 0.32, color: "#fff",
+        fontFamily: "inherit", fontWeight: 700, fontSize: size * 0.32, color: "#fff",
         textShadow: "0 1px 3px rgba(0,0,0,.4)" }}>{initials}</div>
     </div>
   );
@@ -361,7 +361,7 @@ function Splash({ label }) {
         boxShadow: `0 12px 40px ${C.rust}66` }}>
         <Compass size={48} color="#fff" />
       </div>
-      <div className="sc-pop" style={{ fontFamily: "Georgia, serif", fontWeight: 700, fontSize: 25, color: C.cream }}>ShareCompass</div>
+      <div className="sc-pop" style={{ fontFamily: "inherit", fontWeight: 700, fontSize: 25, color: C.cream }}>ShareCompass</div>
       <div style={{ display: "flex", alignItems: "center", gap: 10, color: C.mute, fontSize: 13 }}>
         <RefreshCw size={15} className="sc-spin" /> {label || "Loading…"}
       </div>
@@ -382,7 +382,7 @@ function Meter({ value, size = 46 }) {
           style={{ transition: "stroke-dashoffset .6s ease" }} />
       </svg>
       <div style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center",
-        fontFamily: "Georgia, serif", fontSize: size*0.3, fontWeight: 700, color: col }}>{value}</div>
+        fontFamily: "inherit", fontSize: size*0.3, fontWeight: 700, color: col }}>{value}</div>
     </div>
   );
 }
@@ -396,10 +396,7 @@ function Chip({ active, onClick, children, color }) {
     color: active ? "#fff" : C.mute, cursor: "pointer", whiteSpace: "nowrap" }}>{children}</button>;
 }
 function SectionRule({ children }) {
-  return <div style={{ display: "flex", alignItems: "center", gap: 10, margin: "0 0 14px" }}>
-    <h3 style={{ fontFamily: "Georgia, serif", fontSize: 15, fontWeight: 700, color: C.cream, margin: 0, whiteSpace: "nowrap" }}>{children}</h3>
-    <div style={{ flex: 1, height: 1, background: C.line }} />
-  </div>;
+  return <h3 style={{ fontFamily: "inherit", fontSize: 18, fontWeight: 750, color: C.cream, margin: "0 0 14px", letterSpacing: "-.02em" }}>{children}</h3>;
 }
 function FilterRow({ label, children }) {
   return <div style={{ marginBottom: 12 }}>
@@ -433,7 +430,7 @@ function OrgCard({ org, match, following, onFollow, onOpen, primaryLabel = "Expl
       </div>
       <div style={{ padding: 15 }}>
         <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 8 }}>
-          <span style={{ fontFamily: "Georgia, serif", fontWeight: 700, fontSize: 17, color: C.cream }}>{org.name}</span>
+          <span style={{ fontFamily: "inherit", fontWeight: 700, fontSize: 17, color: C.cream }}>{org.name}</span>
           <Tag cause={org.cause} />
         </div>
         <div style={{ fontSize: 12, color: C.faint, display: "flex", alignItems: "center", gap: 5, margin: "4px 0 10px" }}>
@@ -474,14 +471,14 @@ function DetailSheet({ org, match, following, onFollow, onClose, onGive }) {
           {match && <div style={{ position: "absolute", bottom: -24, right: 18, background: C.paper, borderRadius: "50%", padding: 4, boxShadow: "0 4px 12px rgba(0,0,0,.4)" }}><Meter value={match.score} size={54} /></div>}
         </div>
         <div style={{ padding: "18px 20px 22px" }}>
-          <div style={{ fontFamily: "Georgia, serif", fontWeight: 700, fontSize: 23, color: C.cream }}>{org.name}</div>
+          <div style={{ fontFamily: "inherit", fontWeight: 700, fontSize: 23, color: C.cream }}>{org.name}</div>
           <div style={{ fontSize: 13, color: C.mute, display: "flex", alignItems: "center", gap: 5, marginTop: 3 }}><MapPin size={12} /> {org.loc} · {org.handle}</div>
           {org.real && <div style={{ fontSize: 12, color: C.pine, display: "flex", alignItems: "center", gap: 6, marginTop: 10 }}><ShieldCheck size={14} /> Official website listed</div>}
           {org.demo && <div style={{ fontSize: 12, color: C.mute, background: C.paper2, borderRadius: 8, padding: "8px 11px", marginTop: 10 }}>Illustrative community request, shown to demonstrate individual giving.</div>}
           {match && (
             <div style={{ border: "1px solid " + C.line, borderRadius: 12, padding: 14, margin: "16px 0", background: C.paper2 }}>
-              <div style={{ fontSize: 12.5, fontWeight: 700, color: C.gold, display: "flex", alignItems: "center", gap: 6, marginBottom: 8, fontFamily: "Georgia, serif" }}>
-                <Sparkles size={14} /> Why you match — {match.score}%</div>
+              <div style={{ fontSize: 12.5, fontWeight: 700, color: C.gold, display: "flex", alignItems: "center", gap: 6, marginBottom: 8, fontFamily: "inherit" }}>
+                <Sparkles size={14} /> Why this fits you · {match.score}%</div>
               {match.why.length ? match.why.map((r) => (
                 <div key={r} style={{ fontSize: 13, color: C.mute, display: "flex", alignItems: "center", gap: 7, padding: "3px 0" }}><Check size={14} color={C.pine} /> {r}</div>
               )) : <div style={{ fontSize: 13, color: C.mute }}>Outside your current preferences. Adjust filters on Connect.</div>}
@@ -517,7 +514,7 @@ function GiveFlow({ org, onClose, onDone }) {
       <button onClick={() => (stage > 1 ? setStage(stage - 1) : onClose())} style={{ background: "none", border: "none", cursor: "pointer" }}>
         <ArrowLeft size={20} color={C.cream} /></button>
       <div style={{ flex: 1 }}>
-        <div style={{ fontFamily: "Georgia, serif", fontWeight: 700, fontSize: 16, color: C.cream }}>{title}</div>
+        <div style={{ fontFamily: "inherit", fontWeight: 700, fontSize: 16, color: C.cream }}>{title}</div>
         <div style={{ fontSize: 12, color: C.mute }}>{org.name}</div>
       </div>
       <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer" }}><X size={20} color={C.mute} /></button>
@@ -533,15 +530,15 @@ function GiveFlow({ org, onClose, onDone }) {
             {presets.map((p) => {
               const on = !custom && amount === p;
               return <button key={p} onClick={() => { setAmount(p); setCustom(""); }} className="sc-tap"
-                style={{ padding: "20px 0", borderRadius: 14, cursor: "pointer", fontFamily: "Georgia, serif", fontWeight: 700, fontSize: 22,
+                style={{ padding: "20px 0", borderRadius: 14, cursor: "pointer", fontFamily: "inherit", fontWeight: 700, fontSize: 22,
                   border: "1.5px solid " + (on ? m.c : C.line2), background: on ? m.c + "22" : C.paper2, color: on ? m.c : C.cream }}>${p}</button>;
             })}
           </div>
           <div style={{ fontSize: 11, color: C.faint, letterSpacing: 1, marginBottom: 8 }}>OR ENTER YOUR OWN</div>
           <div style={{ display: "flex", alignItems: "center", gap: 8, background: C.paper2, border: "1.5px solid " + (custom ? m.c : C.line2), borderRadius: 12, padding: "14px 16px" }}>
-            <span style={{ fontSize: 22, fontFamily: "Georgia, serif", color: C.mute }}>$</span>
+            <span style={{ fontSize: 22, fontFamily: "inherit", color: C.mute }}>$</span>
             <input value={custom} onChange={(e) => setCustom(e.target.value.replace(/\D/g, ""))} inputMode="numeric" placeholder="0"
-              style={{ ...inputStyle, fontSize: 22, fontFamily: "Georgia, serif" }} />
+              style={{ ...inputStyle, fontSize: 22, fontFamily: "inherit" }} />
           </div>
         </div>
         <div style={{ padding: 20, borderTop: "1px solid " + C.line }}>
@@ -563,7 +560,7 @@ function GiveFlow({ org, onClose, onDone }) {
               <div style={{ width: 22, height: 22, borderRadius: "50%", border: "2px solid " + (on ? m.c : C.line2), display: "grid", placeItems: "center" }}>
                 {on && <div style={{ width: 11, height: 11, borderRadius: "50%", background: m.c }} />}</div>
               <div style={{ flex: 1 }}>
-                <div style={{ fontFamily: "Georgia, serif", fontWeight: 700, fontSize: 16, color: C.cream }}>{t}</div>
+                <div style={{ fontFamily: "inherit", fontWeight: 700, fontSize: 16, color: C.cream }}>{t}</div>
                 <div style={{ fontSize: 12.5, color: C.mute }}>{s}</div></div>
             </button>;
           })}
@@ -578,7 +575,7 @@ function GiveFlow({ org, onClose, onDone }) {
         <Header title="Save a demo pledge" />
         <div style={{ flex: 1, overflowY: "auto", padding: 20 }}>
           <div style={{ background: C.paper2, border: "1px solid " + C.line, borderRadius: 14, padding: 18 }}>
-            <div style={{ fontFamily: "Georgia, serif", fontWeight: 700, fontSize: 18, color: C.cream, marginBottom: 8 }}>No payment details needed</div>
+            <div style={{ fontFamily: "inherit", fontWeight: 700, fontSize: 18, color: C.cream, marginBottom: 8 }}>No payment details needed</div>
             <p style={{ fontSize: 13.5, color: C.mute, lineHeight: 1.6, margin: 0 }}>This community request is illustrative. ShareCompass will save a private pledge to your profile, but it will not charge you or send money.</p>
           </div>
         </div>
@@ -592,7 +589,7 @@ function GiveFlow({ org, onClose, onDone }) {
         <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 30, textAlign: "center" }}>
           <div className="sc-pop" style={{ width: 88, height: 88, borderRadius: "50%", background: C.pine, display: "grid", placeItems: "center", marginBottom: 24 }}>
             <Check size={46} color="#fff" /></div>
-          <div style={{ fontFamily: "Georgia, serif", fontWeight: 700, fontSize: 26, color: C.cream, marginBottom: 10 }}>Thank you</div>
+          <div style={{ fontFamily: "inherit", fontWeight: 700, fontSize: 26, color: C.cream, marginBottom: 10 }}>Thank you</div>
           <p style={{ fontSize: 14.5, color: C.mute, lineHeight: 1.6, maxWidth: 280 }}>
             Your {freq === "once" ? "pledge" : freq + " pledge"} of <b style={{ color: C.cream }}>${amt}</b> to {org.name} was saved. No payment was processed.</p>
         </div>
@@ -639,7 +636,7 @@ function StepScaffold({ step, total, onBack, title, sub, children, footer }) {
         </div>
       </div>
       <div key={step} className="sc-page" style={{ flex: 1, overflowY: "auto", padding: "0 20px" }}>
-        <h2 style={{ fontFamily: "Georgia, serif", fontSize: 25, fontWeight: 700, color: C.cream, margin: "0 0 8px", lineHeight: 1.2 }}>{title}</h2>
+        <h2 style={{ fontFamily: "inherit", fontSize: 25, fontWeight: 700, color: C.cream, margin: "0 0 8px", lineHeight: 1.2 }}>{title}</h2>
         {sub && <p style={{ fontSize: 14, color: C.mute, lineHeight: 1.5, margin: "0 0 22px" }}>{sub}</p>}
         {children}
       </div>
@@ -669,7 +666,7 @@ function Onboarding({ onComplete, initial }) {
 
   if (step === 1) return (
     <StepScaffold step={1} total={TOTAL} title="Welcome to ShareCompass"
-      sub="A field guide for giving. Answer a few questions and we'll match you with organizations and causes that fit — anywhere in the world."
+      sub="Tell us what matters to you, and we will help you find good places to start."
       footer={<BigButton onClick={next}>Get started <ArrowRight size={17} /></BigButton>}>
       <div style={{ display: "grid", placeItems: "center", padding: "6px 0 22px" }}>
         <div style={{ width: 100, height: 100, borderRadius: 26, background: `linear-gradient(135deg, ${C.rust}, ${C.ember})`, display: "grid", placeItems: "center", boxShadow: `0 12px 40px ${C.rust}55` }}>
@@ -724,7 +721,7 @@ function Onboarding({ onComplete, initial }) {
     <StepScaffold step={5} total={TOTAL} onBack={back} title="Enter the code" sub={`We sent a 4-digit code to ${geo.dial} ${d.phone}.`}
       footer={<BigButton onClick={() => { if (entered === sentCode) { setCodeErr(""); next(); } else setCodeErr("That code isn't right. Check and try again."); }} disabled={entered.length !== 4}>Verify <Check size={17} /></BigButton>}>
       <div style={{ display: "flex", justifyContent: "center", gap: 10, margin: "8px 0 16px" }}>
-        {[0, 1, 2, 3].map((i) => <div key={i} style={{ width: 54, height: 62, border: "1.5px solid " + (entered.length === i ? C.rust : C.line2), borderRadius: 12, display: "grid", placeItems: "center", fontFamily: "Georgia, serif", fontSize: 26, fontWeight: 700, color: C.cream, background: C.paper2 }}>{entered[i] || ""}</div>)}
+        {[0, 1, 2, 3].map((i) => <div key={i} style={{ width: 54, height: 62, border: "1.5px solid " + (entered.length === i ? C.rust : C.line2), borderRadius: 12, display: "grid", placeItems: "center", fontFamily: "inherit", fontSize: 26, fontWeight: 700, color: C.cream, background: C.paper2 }}>{entered[i] || ""}</div>)}
       </div>
       <input value={entered} onChange={(e) => { setEntered(e.target.value.replace(/\D/g, "").slice(0, 4)); setCodeErr(""); }} inputMode="numeric" autoFocus placeholder="Tap and type the code"
         style={{ width: "100%", textAlign: "center", padding: 12, borderRadius: 10, border: "1.5px solid " + C.line2, background: C.paper2, fontSize: 14, color: C.cream, outline: "none", boxSizing: "border-box" }} />
@@ -734,7 +731,7 @@ function Onboarding({ onComplete, initial }) {
           <RefreshCw size={14} /> {resendIn > 0 ? `Resend in ${resendIn}s` : "Resend code"}</button>
       </div>
       <div style={{ marginTop: 18, textAlign: "center", fontSize: 11.5, color: C.mute, background: C.paper2, borderRadius: 8, padding: "8px 10px" }}>
-        Demo mode — no real SMS is sent. Your code is <b style={{ color: C.cream, letterSpacing: 2 }}>{sentCode}</b></div>
+        This is a demo, so no text was sent. Your code is <b style={{ color: C.cream, letterSpacing: 2 }}>{sentCode}</b></div>
     </StepScaffold>
   );
 
@@ -760,12 +757,12 @@ function Onboarding({ onComplete, initial }) {
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
         {CAUSE_KEYS.map((k) => { const on = d.causes.includes(k); return (
           <button key={k} onClick={() => toggle("causes", k)} className="sc-tap" style={{ textAlign: "left", padding: 0, borderRadius: 12, cursor: "pointer", overflow: "hidden", border: "1.5px solid " + (on ? CAUSE[k].c : C.line2), background: C.paper2 }}>
-            <div style={{ position: "relative", height: 54 }}>
-              <CoverArt org={{ id: "c" + k, cause: k, name: k, image: null }} height={54} />
+            <div style={{ position: "relative", height: 72 }}>
+              <CoverArt org={{ id: "c" + k, cause: k, name: k, image: CAUSE[k].image }} height={72} />
               {on && <div style={{ position: "absolute", top: 6, right: 6, background: CAUSE[k].c, borderRadius: "50%", width: 22, height: 22, display: "grid", placeItems: "center" }}><Check size={14} color="#fff" /></div>}
             </div>
             <div style={{ padding: "8px 11px 10px" }}>
-              <div style={{ fontFamily: "Georgia, serif", fontWeight: 700, fontSize: 14.5, color: C.cream }}>{k}</div>
+              <div style={{ fontFamily: "inherit", fontWeight: 700, fontSize: 14.5, color: C.cream }}>{k}</div>
               <div style={{ fontSize: 11, color: C.mute, marginTop: 2 }}>{CAUSE[k].tag}</div></div>
           </button>); })}
       </div>
@@ -773,13 +770,13 @@ function Onboarding({ onComplete, initial }) {
   );
 
   if (step === 8) return (
-    <StepScaffold step={4} total={TOTAL} onBack={back} title="How do you like to give?" sub="This shapes your matches — we'll prioritize organizations that accept what you can offer."
+    <StepScaffold step={4} total={TOTAL} onBack={back} title="How would you like to help?" sub="Choose any options that work for you."
       footer={<BigButton onClick={next} disabled={d.gives.length === 0}>Continue <ArrowRight size={17} /></BigButton>}>
       <div style={{ display: "grid", gap: 12 }}>
         {GIVE_MODES.map(({ key, label, desc, icon: Icon }) => { const on = d.gives.includes(key); return (
           <button key={key} onClick={() => toggle("gives", key)} className="sc-tap" style={{ display: "flex", alignItems: "center", gap: 14, padding: 16, borderRadius: 14, cursor: "pointer", textAlign: "left", border: "1.5px solid " + (on ? C.cream : C.line2), background: on ? C.paper2 : C.paper }}>
             <div style={{ width: 46, height: 46, borderRadius: 12, background: on ? C.cream : C.line2, display: "grid", placeItems: "center", flexShrink: 0 }}><Icon size={22} color={on ? C.bg : C.mute} /></div>
-            <div style={{ flex: 1 }}><div style={{ fontFamily: "Georgia, serif", fontWeight: 700, fontSize: 16, color: C.cream }}>{label}</div><div style={{ fontSize: 12.5, color: C.mute }}>{desc}</div></div>
+            <div style={{ flex: 1 }}><div style={{ fontFamily: "inherit", fontWeight: 700, fontSize: 16, color: C.cream }}>{label}</div><div style={{ fontSize: 12.5, color: C.mute }}>{desc}</div></div>
             {on && <Check size={20} color={C.cream} />}</button>); })}
       </div>
     </StepScaffold>
@@ -790,7 +787,7 @@ function Onboarding({ onComplete, initial }) {
       footer={<BigButton onClick={() => onComplete(d)}>Finish setup <PartyPopper size={17} /></BigButton>}>
       <button onClick={() => set("newsletter", !d.newsletter)} className="sc-tap" style={{ width: "100%", display: "flex", alignItems: "center", gap: 14, padding: 16, borderRadius: 14, cursor: "pointer", textAlign: "left", border: "1.5px solid " + (d.newsletter ? C.cream : C.line2), background: d.newsletter ? C.paper2 : C.paper }}>
         <div style={{ width: 46, height: 46, borderRadius: 12, background: d.newsletter ? C.cream : C.line2, display: "grid", placeItems: "center" }}><Bell size={22} color={d.newsletter ? C.bg : C.mute} /></div>
-        <div style={{ flex: 1 }}><div style={{ fontFamily: "Georgia, serif", fontWeight: 700, fontSize: 16, color: C.cream }}>Monthly newsletter</div><div style={{ fontSize: 12.5, color: C.mute }}>{d.newsletter ? "You're subscribed" : "Not subscribed"}</div></div>
+        <div style={{ flex: 1 }}><div style={{ fontFamily: "inherit", fontWeight: 700, fontSize: 16, color: C.cream }}>Monthly newsletter</div><div style={{ fontSize: 12.5, color: C.mute }}>{d.newsletter ? "You're subscribed" : "Not subscribed"}</div></div>
         <div style={{ width: 46, height: 27, borderRadius: 14, background: d.newsletter ? C.pine : C.line2, position: "relative", flexShrink: 0 }}><div style={{ position: "absolute", top: 3, left: d.newsletter ? 22 : 3, width: 21, height: 21, borderRadius: "50%", background: "#fff", transition: "left .2s" }} /></div>
       </button>
     </StepScaffold>
@@ -816,17 +813,17 @@ function HomePage({ giver, follows, onFollow, onOpen }) {
         <div style={{ position: "absolute", top: 12, left: 14, fontSize: 11, letterSpacing: 2, color: "#fff", fontWeight: 700, textShadow: "0 1px 4px rgba(0,0,0,.5)" }}>YOUR STRONGEST MATCH</div>
         <div style={{ position: "absolute", top: 10, right: 12, background: C.card, borderRadius: "50%", padding: 3, boxShadow: "0 2px 8px rgba(0,0,0,.4)" }}><Meter value={top.m.score} size={46} /></div>
         <div style={{ padding: 16, background: C.card }}>
-          <div style={{ fontFamily: "Georgia, serif", fontWeight: 700, fontSize: 20, color: C.cream }}>{top.o.name}</div>
+          <div style={{ fontFamily: "inherit", fontWeight: 700, fontSize: 20, color: C.cream }}>{top.o.name}</div>
           <div style={{ fontSize: 12.5, color: C.mute, marginBottom: 8 }}>{top.o.loc} · {CAUSE[top.o.cause].tag}</div>
           <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>{top.m.why.map((r) => <span key={r} style={{ fontSize: 11.5, color: C.pine, display: "inline-flex", alignItems: "center", gap: 4 }}><Check size={12} /> {r}</span>)}</div>
         </div>
       </div>
-      <div style={{ borderRadius: 14, padding: 16, marginBottom: 22, background: C.paper2, border: "1px solid " + C.line }}>
+      <div style={{ padding: "4px 0 18px", marginBottom: 18, borderBottom: "1px solid " + C.line }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
           <CalendarClock size={18} color={C.slate} />
-          <span style={{ fontFamily: "Georgia, serif", fontWeight: 700, fontSize: 15, color: C.cream }}>Events near you</span>
-          <span style={{ fontSize: 10, fontWeight: 700, color: C.slate, background: C.slate + "22", padding: "2px 7px", borderRadius: 5, letterSpacing: .5 }}>COMING SOON</span></div>
-        <div style={{ fontSize: 13, color: C.mute, lineHeight: 1.5 }}>Local fundraisers and volunteer days from nonprofits in {giver.region || "your area"} will appear here.</div></div>
+          <span style={{ fontFamily: "inherit", fontWeight: 700, fontSize: 15, color: C.cream }}>Events near you</span>
+          <span style={{ fontSize: 10, fontWeight: 700, color: C.slate, letterSpacing: .5 }}>SOON</span></div>
+        <div style={{ fontSize: 13, color: C.mute, lineHeight: 1.5 }}>We are working on local volunteer events for {giver.region || "your area"}.</div></div>
       <SectionRule>Featured organizations</SectionRule>
       <div className="sc-stagger" style={{ display: "grid", gap: 14 }}>
         {ranked.slice(1, 4).map(({ o, m }) => <OrgCard key={o.id} org={o} match={m} following={follows.has(o.id)} onFollow={onFollow} onOpen={() => onOpen(o)} />)}</div>
@@ -844,8 +841,7 @@ function GivePage({ giver, follows, onFollow, onOpen }) {
   return (
     <div style={{ padding: "4px 16px 16px" }}>
       <SectionRule>Give to an organization</SectionRule>
-      <div style={{ display: "flex", gap: 10, alignItems: "center", background: C.rust + "1a", border: "1px solid " + C.rust + "55", borderRadius: 12, padding: 13, marginBottom: 18 }}>
-        <Zap size={20} color={C.ember} /><div style={{ fontSize: 12.5, color: C.mute }}>Donate, volunteer, sponsor, or contribute goods to time-sensitive nonprofit work.</div></div>
+      <p style={{ fontSize: 13.5, color: C.mute, lineHeight: 1.55, margin: "-4px 0 16px" }}>Find a nonprofit to support with money, time, supplies, or sponsorship.</p>
       <SearchBox value={query} onChange={setQuery} placeholder="Search organizations, causes, or locations…" />
       <div style={{ fontSize: 12, color: C.faint, margin: "-7px 2px 13px" }}>{urgent.length} urgent organization{urgent.length === 1 ? "" : "s"}</div>
       <div className="sc-stagger" style={{ display: "grid", gap: 14 }}>
@@ -868,7 +864,7 @@ function FindHelpPage({ follows, onFollow, onOpen }) {
   return (
     <div style={{ padding: "4px 16px 16px" }}>
       <SectionRule>Find services for yourself</SectionRule>
-      <p style={{ fontSize: 13, color: C.mute, margin: "0 0 14px", lineHeight: 1.5 }}>This section is for getting assistance, not giving. Search organizations that provide food, housing, clean water, or medical services.</p>
+      <p style={{ fontSize: 13.5, color: C.mute, margin: "-4px 0 14px", lineHeight: 1.55 }}>Looking for support? Search for food, housing, clean water, and medical services near you.</p>
       <SearchBox value={query} onChange={setQuery} placeholder="Search help by organization or location…" />
       <FilterRow label="What do you need?">{needs.map((item) => <Chip key={item} active={need === item} onClick={() => setNeed(item)}>{item === "Hunger" ? "Food" : item === "Health" ? "Medical" : item}</Chip>)}</FilterRow>
       <div style={{ fontSize: 12, color: C.faint, margin: "4px 2px 13px" }}>{help.length} service provider{help.length === 1 ? "" : "s"}</div>
@@ -904,7 +900,7 @@ function ConnectPage({ giver, setGiver, follows, onFollow, onOpen }) {
   }, [q, giver]);
   return (
     <div style={{ padding: "4px 16px 16px" }}>
-      <SectionRule>Connect — refine your match</SectionRule>
+      <SectionRule>Find organizations</SectionRule>
       <div style={{ display: "flex", alignItems: "center", gap: 10, background: C.paper2, border: "1.5px solid " + C.line2, borderRadius: 10, padding: "11px 13px", marginBottom: 18 }}>
         <Search size={17} color={C.mute} /><input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search organizations, causes, places…" style={inputStyle} />
         {q && <X size={16} color={C.mute} style={{ cursor: "pointer" }} onClick={() => setQ("")} />}</div>
@@ -931,16 +927,16 @@ function ConnectHub({ giver, setGiver, follows, onFollow, onOpen, community, use
     catch (e) { onToast(e.message || "Something went wrong"); }
   };
 
-  return <div>
-    <div style={{ display: "flex", gap: 6, margin: "4px 16px 16px", padding: 4, background: C.paper2, border: "1px solid " + C.line, borderRadius: 12 }}>
+  return <div style={{ paddingTop: 14 }}>
+    <div style={{ display: "flex", gap: 6, margin: "0 16px 20px", padding: 3, background: C.paper2, borderRadius: 10 }}>
       {[["people", "Volunteer together", Users], ["orgs", "Organizations", Compass]].map(([id, label, Icon]) => <button key={id} onClick={() => setView(id)} style={{ flex: 1, border: "none", borderRadius: 9, padding: "10px 8px", cursor: "pointer", background: view === id ? C.cream : "transparent", color: view === id ? C.bg : C.mute, fontWeight: 700, fontSize: 12, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}><Icon size={15} />{label}</button>)}
     </div>
     {view === "orgs" ? <ConnectPage giver={giver} setGiver={setGiver} follows={follows} onFollow={onFollow} onOpen={onOpen} /> :
       <div style={{ padding: "0 16px 18px" }}>
-        <SectionRule>Helping Pair</SectionRule>
+        <SectionRule>Volunteer with someone nearby</SectionRule>
         {!giver.isPublic ? <div style={{ background: C.paper2, border: "1px solid " + C.line, borderRadius: 16, padding: 24, textAlign: "center" }}>
           <ShieldCheck size={34} color={C.pine} />
-          <div style={{ fontFamily: "Georgia, serif", fontWeight: 700, fontSize: 19, marginTop: 10, color: C.cream }}>Your profile is private</div>
+          <div style={{ fontFamily: "inherit", fontWeight: 700, fontSize: 19, marginTop: 10, color: C.cream }}>Your profile is private</div>
           <p style={{ color: C.mute, fontSize: 13.5, lineHeight: 1.55 }}>Nobody can find or request to pair with you. Turn on public discovery in Settings when you want to meet nearby volunteers.</p>
         </div> : <>
           <div style={{ background: C.pine + "18", border: "1px solid " + C.pine + "55", borderRadius: 12, padding: 13, marginBottom: 16, color: C.mute, fontSize: 12.5, lineHeight: 1.5 }}><b style={{ color: C.cream }}>Public discovery is on.</b> People only see your display name, general area, causes, and ways you help. Your email and phone stay private.</div>
@@ -952,7 +948,7 @@ function ConnectHub({ giver, setGiver, follows, onFollow, onOpen, community, use
             return <article key={person.uid} style={{ background: C.card, border: "1px solid " + C.line, borderRadius: 15, padding: 15 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 11 }}>
                 <div style={{ width: 44, height: 44, borderRadius: "50%", background: `linear-gradient(135deg, ${C.rust}, ${C.gold})`, display: "grid", placeItems: "center", color: "#fff", fontWeight: 800 }}>{(person.displayName || "N")[0].toUpperCase()}</div>
-                <div style={{ flex: 1 }}><div style={{ color: C.cream, fontWeight: 700, fontFamily: "Georgia, serif", fontSize: 16 }}>{person.displayName}</div><div style={{ color: C.mute, fontSize: 12, display: "flex", alignItems: "center", gap: 4 }}><MapPin size={11} />{[person.city, person.region].filter(Boolean).join(", ") || "Your area"}</div></div>
+                <div style={{ flex: 1 }}><div style={{ color: C.cream, fontWeight: 700, fontFamily: "inherit", fontSize: 16 }}>{person.displayName}</div><div style={{ color: C.mute, fontSize: 12, display: "flex", alignItems: "center", gap: 4 }}><MapPin size={11} />{[person.city, person.region].filter(Boolean).join(", ") || "Your area"}</div></div>
               </div>
               <div style={{ display: "flex", gap: 6, flexWrap: "wrap", margin: "12px 0" }}>{(common.length ? common : person.causes || []).slice(0, 4).map((cause) => <span key={cause} style={{ fontSize: 10.5, color: CAUSE[cause]?.c || C.pine, border: "1px solid currentColor", borderRadius: 5, padding: "2px 6px" }}>{common.includes(cause) ? `Both care about ${cause}` : cause}</span>)}</div>
               {incoming ? <div style={{ display: "flex", gap: 8 }}><button onClick={() => act(() => respondToConnection(connection.id, "accepted"), `You and ${person.displayName} are paired`)} style={{ flex: 1, border: "none", borderRadius: 9, padding: 10, background: C.pine, color: "#fff", fontWeight: 700, cursor: "pointer" }}>Accept</button><button onClick={() => act(() => respondToConnection(connection.id, "declined"), "Request declined")} style={{ flex: 1, border: "1px solid " + C.line2, borderRadius: 9, padding: 10, background: "transparent", color: C.mute, fontWeight: 700, cursor: "pointer" }}>Decline</button></div> :
@@ -978,18 +974,18 @@ function ProfilePage({ giver, follows, gifts, onEditProfile, onOpenSettings }) {
   return (
     <div style={{ padding: "4px 16px 16px" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 20 }}>
-        <div style={{ width: 56, height: 56, borderRadius: "50%", background: `linear-gradient(135deg, ${C.rust}, ${C.ember})`, color: "#fff", display: "grid", placeItems: "center", fontFamily: "Georgia, serif", fontWeight: 700, fontSize: 22 }}>{(giver.email || "O")[0].toUpperCase()}</div>
+        <div style={{ width: 56, height: 56, borderRadius: "50%", background: `linear-gradient(135deg, ${C.rust}, ${C.ember})`, color: "#fff", display: "grid", placeItems: "center", fontFamily: "inherit", fontWeight: 700, fontSize: 22 }}>{(giver.email || "O")[0].toUpperCase()}</div>
         <div style={{ flex: 1 }}>
-          <div style={{ fontFamily: "Georgia, serif", fontWeight: 700, fontSize: 20, color: C.cream }}>{giver.displayName || (giver.email ? giver.email.split("@")[0] : "Volunteer")}</div>
+          <div style={{ fontFamily: "inherit", fontWeight: 700, fontSize: 20, color: C.cream }}>{giver.displayName || (giver.email ? giver.email.split("@")[0] : "Volunteer")}</div>
           <div style={{ fontSize: 12.5, color: C.mute, display: "flex", alignItems: "center", gap: 5 }}><MapPin size={11} /> {[giver.city, giver.region, geo?.name].filter(Boolean).join(", ") || "Location not set"}</div></div>
         <button onClick={onOpenSettings} className="sc-tap" style={{ background: "none", border: "1.5px solid " + C.line2, borderRadius: 10, padding: 9, cursor: "pointer" }}><Settings size={18} color={C.cream} /></button></div>
       <div style={{ display: "flex", marginBottom: 20, border: "1px solid " + C.line, borderRadius: 12, overflow: "hidden" }}>
         {stats.map((s, i) => <div key={s.label} style={{ flex: 1, padding: "16px 10px", textAlign: "center", borderLeft: i ? "1px solid " + C.line : "none", background: C.paper2 }}>
-          <div style={{ fontFamily: "Georgia, serif", fontSize: 25, fontWeight: 700, color: s.c }}>{s.value}</div>
+          <div style={{ fontFamily: "inherit", fontSize: 25, fontWeight: 700, color: s.c }}>{s.value}</div>
           <div style={{ fontSize: 11, color: C.mute, marginTop: 2 }}>{s.label}</div></div>)}</div>
       <button onClick={onEditProfile} className="sc-tap" style={{ width: "100%", textAlign: "left", background: C.paper2, border: "1px solid " + C.line, borderRadius: 12, padding: 14, marginBottom: 22, cursor: "pointer", display: "flex", alignItems: "center", gap: 12 }}>
         <div style={{ flex: 1 }}><div style={{ fontSize: 12.5, fontWeight: 700, color: C.cream, marginBottom: 6 }}>Your giving preferences</div>
-          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>{giver.causes.slice(0, 4).map((c) => <span key={c} style={{ fontSize: 11, color: CAUSE[c].c, border: "1px solid " + CAUSE[c].c + "66", borderRadius: 5, padding: "2px 7px" }}>{c}</span>)}{giver.causes.length === 0 && <span style={{ fontSize: 12, color: C.mute }}>None yet — tap to set</span>}</div></div>
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>{giver.causes.slice(0, 4).map((c) => <span key={c} style={{ fontSize: 11, color: CAUSE[c].c, border: "1px solid " + CAUSE[c].c + "66", borderRadius: 5, padding: "2px 7px" }}>{c}</span>)}{giver.causes.length === 0 && <span style={{ fontSize: 12, color: C.mute }}>Nothing selected yet. Tap to choose.</span>}</div></div>
         <ChevronRight size={18} color={C.mute} /></button>
       <SectionRule><BarChart3 size={14} style={{ verticalAlign: -2 }} /> Giving footprint</SectionRule>
       {Object.keys(counts).length === 0 ? <div style={{ border: "1px dashed " + C.line2, borderRadius: 12, padding: 24, textAlign: "center", color: C.mute, fontSize: 13.5, background: C.paper2 }}>Follow organizations to build your footprint.</div>
@@ -1000,7 +996,7 @@ function ProfilePage({ giver, follows, gifts, onEditProfile, onOpenSettings }) {
       <div style={{ display: "grid", gap: 10 }}>
         {!followed.length && <div style={{ fontSize: 13.5, color: C.mute }}>Updates appear here once you follow.</div>}
         {followed.map((o) => <div key={o.id} style={{ display: "flex", gap: 11, alignItems: "center", background: C.paper2, border: "1px solid " + C.line, borderRadius: 12, padding: 11 }}>
-          <Crest org={o} size={40} radius={11} /><div style={{ flex: 1, fontSize: 13, color: C.mute }}><b style={{ color: C.cream, fontFamily: "Georgia, serif" }}>{o.name}</b><br />Open its profile to see current programs and official ways to help.</div></div>)}</div>
+          <Crest org={o} size={40} radius={11} /><div style={{ flex: 1, fontSize: 13, color: C.mute }}><b style={{ color: C.cream, fontFamily: "inherit" }}>{o.name}</b><br />Open its profile to see current programs and official ways to help.</div></div>)}</div>
     </div>
   );
 }
@@ -1016,7 +1012,7 @@ function SettingsScreen({ giver, setGiver, onClose, onEditProfile, onSignOut, on
     <div style={{ display: "flex", flexDirection: "column", height: "100%", background: C.paper }}>
       <div style={{ padding: "16px 18px", background: C.paper2, color: C.cream, display: "flex", alignItems: "center", gap: 12, borderBottom: "1px solid " + C.line }}>
         <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer" }}><ArrowLeft size={20} color={C.cream} /></button>
-        <span style={{ fontFamily: "Georgia, serif", fontWeight: 700, fontSize: 18 }}>Settings</span></div>
+        <span style={{ fontFamily: "inherit", fontWeight: 700, fontSize: 18 }}>Settings</span></div>
       <div style={{ flex: 1, overflowY: "auto" }}>
         <div style={{ padding: "16px 16px 8px", fontSize: 11, letterSpacing: 1, color: C.faint }}>ACCOUNT</div>
         <Row label="Email" value={giver.email || "Not set"} />
@@ -1062,9 +1058,11 @@ export default function ShareCompass({ userId, profile, saveProfile, community, 
   const [gifts, setGifts] = useState(profile?.gifts || []);
   const [toast, setToast] = useState("");
   const toastRef = useRef();
+  const pageScrollRef = useRef();
   const fireToast = (m) => { setToast(m); clearTimeout(toastRef.current); toastRef.current = setTimeout(() => setToast(""), 2200); };
 
   useEffect(() => { if (phase !== "boot") return; const t = setTimeout(() => setPhase(profile?.onboarded ? "app" : "onboarding"), 900); return () => clearTimeout(t); }, [phase, profile?.onboarded]);
+  useEffect(() => { pageScrollRef.current?.scrollTo({ top: 0, behavior: "auto" }); }, [tab]);
 
   const [giver, setGiverState] = useState(() => ({ email: "", displayName: "", countryCode: "US", phone: "", causes: [], gives: [], region: "", city: "", newsletter: true, region2: "global", urgentOnly: false, isPublic: false, theme: "dark", ...profile }));
   const [follows, setFollows] = useState(() => new Set(profile?.follows || []));
@@ -1094,7 +1092,7 @@ export default function ShareCompass({ userId, profile, saveProfile, community, 
   const theme = THEMES[giver.theme] || THEMES.dark;
   const { outer, shadow, ...themeVars } = theme;
   const frame = (inner) => (
-    <div style={{ ...themeVars, minHeight: "100vh", background: outer, display: "grid", placeItems: "center", padding: 20, fontFamily: "'DM Sans', -apple-system, system-ui, sans-serif", transition: "background .25s ease" }}>
+    <div style={{ ...themeVars, minHeight: "100vh", background: outer, display: "grid", placeItems: "center", padding: 20, fontFamily: "'Avenir Next', Avenir, 'Helvetica Neue', Arial, sans-serif", transition: "background .25s ease" }}>
       <MotionStyles />
       <div className="sc-phone" style={{ width: 400, maxWidth: "100%", height: "min(820px, calc(100dvh - 40px))", background: C.paper, color: C.cream, borderRadius: 30, overflow: "hidden", position: "relative", display: "flex", flexDirection: "column", boxShadow: `0 30px 90px ${shadow}`, border: "1px solid " + C.line }}>
         {inner}<Toast msg={toast} /></div>
@@ -1113,9 +1111,9 @@ export default function ShareCompass({ userId, profile, saveProfile, community, 
 
   return frame(<>
     <div style={{ padding: "16px 18px 12px", background: C.paper2, color: C.cream, display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid " + C.line }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 9 }}><Compass size={20} color={C.ember} /><span style={{ fontFamily: "Georgia, serif", fontWeight: 700, fontSize: 18 }}>ShareCompass</span></div>
+      <div style={{ display: "flex", alignItems: "center", gap: 9 }}><Compass size={20} color={C.ember} /><span style={{ fontFamily: "inherit", fontWeight: 700, fontSize: 18 }}>ShareCompass</span></div>
       <span style={{ fontSize: 10, color: C.mute, border: "1px solid " + C.line2, padding: "2px 7px", borderRadius: 4, letterSpacing: 1 }}>V2.2</span></div>
-    <div style={{ flex: 1, overflowY: "auto" }}>
+    <div ref={pageScrollRef} style={{ flex: 1, overflowY: "auto", scrollPaddingTop: 14 }}>
       <div key={tab} className="sc-page" style={{ minHeight: "100%" }}>
         {tab === "home" && <HomePage giver={giver} follows={follows} onFollow={onFollow} onOpen={setDetail} />}
         {tab === "give" && <GivePage giver={giver} follows={follows} onFollow={onFollow} onOpen={setDetail} />}
