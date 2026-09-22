@@ -4,7 +4,7 @@ import {
   X, Zap, BarChart3, Compass, ArrowRight, ArrowLeft, Mail,
   Phone, Lock, Globe2, CalendarClock, Settings, LogOut, ChevronRight,
   Eye, EyeOff, RefreshCw, PartyPopper, Bell, DollarSign, Clock, Package,
-  Heart, ShieldCheck, ChevronDown,
+  Heart, ShieldCheck, ChevronDown, Sun, Moon, Users, UserPlus,
 } from "lucide-react";
 import { EXTRA_ORGS } from "./organizations.js";
 import { sendPasswordResetEmail } from "firebase/auth";
@@ -26,20 +26,25 @@ import { auth } from "./firebase.js";
 
 // ---------- Palette: deep, warm, moody (more depth than the bright v3) ----------
 const C = {
-  bg:     "#191512",   // app backdrop, deep espresso
-  paper:  "#211C18",   // main surface
-  paper2: "#2B2420",   // raised surface
-  card:   "#2F2823",   // cards
-  line:   "#3D342D",   // borders
-  line2:  "#4A3F37",
-  cream:  "#EFE7DA",   // primary text (warm off-white)
-  mute:   "#A99C8D",   // secondary text
-  faint:  "#7C7064",   // tertiary
+  bg:     "var(--sc-bg)",
+  paper:  "var(--sc-paper)",
+  paper2: "var(--sc-paper-2)",
+  card:   "var(--sc-card)",
+  line:   "var(--sc-line)",
+  line2:  "var(--sc-line-2)",
+  cream:  "var(--sc-text)",
+  mute:   "var(--sc-muted)",
+  faint:  "var(--sc-faint)",
   rust:   "#D2683C",   // urgent / primary accent (warmer, richer)
   ember:  "#E08A4B",   // accent light
   pine:   "#6BA88C",   // positive / give
   gold:   "#D9A441",   // matches / highlight
   slate:  "#6E92AC",   // info
+};
+
+const THEMES = {
+  dark: { "--sc-bg": "#191512", "--sc-paper": "#211C18", "--sc-paper-2": "#2B2420", "--sc-card": "#2F2823", "--sc-line": "#3D342D", "--sc-line-2": "#4A3F37", "--sc-text": "#EFE7DA", "--sc-muted": "#A99C8D", "--sc-faint": "#7C7064", outer: "#14100D", shadow: "rgba(0,0,0,.6)" },
+  light: { "--sc-bg": "#F4EFE7", "--sc-paper": "#FBF8F2", "--sc-paper-2": "#F0E8DC", "--sc-card": "#FFFDF9", "--sc-line": "#DED2C3", "--sc-line-2": "#CDBEAD", "--sc-text": "#2A211B", "--sc-muted": "#6E6257", "--sc-faint": "#918477", outer: "#E9DFD2", shadow: "rgba(78,55,38,.2)" },
 };
 
 // Cause -> accent + a two-color scene gradient for generated cover art
@@ -711,14 +716,16 @@ function Onboarding({ onComplete, initial }) {
   );
 
   if (step === 6) return (
-    <StepScaffold step={2} total={TOTAL} onBack={initial ? undefined : back} title="Where are you?" sub="We use your location to surface causes and nonprofits active near you — and, soon, local events."
-      footer={<BigButton onClick={next} disabled={!d.region}>Continue <ArrowRight size={17} /></BigButton>}>
+    <StepScaffold step={2} total={TOTAL} onBack={initial ? undefined : back} title="Tell us about you" sub="Your account stays private unless you choose to appear in nearby volunteer matching."
+      footer={<BigButton onClick={next} disabled={!d.displayName?.trim() || !d.region}>Continue <ArrowRight size={17} /></BigButton>}>
+      <div style={{ fontSize: 11, color: C.faint, letterSpacing: 1, marginBottom: 8 }}>DISPLAY NAME</div>
+      <Field icon={User}><input style={inputStyle} placeholder="How neighbors will know you" value={d.displayName || ""} onChange={(e) => set("displayName", e.target.value)} /></Field>
       <div style={{ fontSize: 11, color: C.faint, letterSpacing: 1, marginBottom: 8 }}>COUNTRY</div>
       <Autocomplete icon={Globe2} placeholder="Start typing your country…" value={d._ctext ?? geo.name} options={countryNames}
         onChange={(v) => { set("_ctext", v); const code = codeByName(v); if (code) { set("countryCode", code); set("region", ""); set("city", ""); set("_ctext", GEO[code].name); } }} />
       <div style={{ fontSize: 11, color: C.faint, letterSpacing: 1, margin: "6px 0 8px" }}>REGION / STATE</div>
       <Autocomplete icon={MapPin} placeholder="Start typing your region…" value={d.region} options={geo.regions} onChange={(v) => set("region", v)} />
-      <div style={{ fontSize: 11, color: C.faint, letterSpacing: 1, margin: "6px 0 8px" }}>CITY (OPTIONAL)</div>
+      <div style={{ fontSize: 11, color: C.faint, letterSpacing: 1, margin: "6px 0 8px" }}>CITY (RECOMMENDED FOR LOCAL PAIRING)</div>
       <Autocomplete icon={MapPin} placeholder="Start typing your city…" value={d.city} options={geo.cities} onChange={(v) => set("city", v)} />
     </StepScaffold>
   );
@@ -854,6 +861,49 @@ function ConnectPage({ giver, setGiver, follows, onFollow, onOpen }) {
   );
 }
 
+function ConnectHub({ giver, setGiver, follows, onFollow, onOpen, community, userId, onToast }) {
+  const [view, setView] = useState("people");
+  const { people = [], connections = [], error, requestConnection, respondToConnection } = community || {};
+  const connectionFor = (uid) => connections.find((item) => item.participants?.includes(uid));
+  const shared = (person) => (giver.causes || []).filter((cause) => (person.causes || []).includes(cause));
+  const act = async (action, success) => {
+    try { await action(); onToast(success); }
+    catch (e) { onToast(e.message || "Something went wrong"); }
+  };
+
+  return <div>
+    <div style={{ display: "flex", gap: 6, margin: "4px 16px 16px", padding: 4, background: C.paper2, border: "1px solid " + C.line, borderRadius: 12 }}>
+      {[["people", "Volunteer together", Users], ["orgs", "Organizations", Compass]].map(([id, label, Icon]) => <button key={id} onClick={() => setView(id)} style={{ flex: 1, border: "none", borderRadius: 9, padding: "10px 8px", cursor: "pointer", background: view === id ? C.cream : "transparent", color: view === id ? C.bg : C.mute, fontWeight: 700, fontSize: 12, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}><Icon size={15} />{label}</button>)}
+    </div>
+    {view === "orgs" ? <ConnectPage giver={giver} setGiver={setGiver} follows={follows} onFollow={onFollow} onOpen={onOpen} /> :
+      <div style={{ padding: "0 16px 18px" }}>
+        <SectionRule>Helping Pair</SectionRule>
+        {!giver.isPublic ? <div style={{ background: C.paper2, border: "1px solid " + C.line, borderRadius: 16, padding: 24, textAlign: "center" }}>
+          <ShieldCheck size={34} color={C.pine} />
+          <div style={{ fontFamily: "Georgia, serif", fontWeight: 700, fontSize: 19, marginTop: 10, color: C.cream }}>Your profile is private</div>
+          <p style={{ color: C.mute, fontSize: 13.5, lineHeight: 1.55 }}>Nobody can find or request to pair with you. Turn on public discovery in Settings when you want to meet nearby volunteers.</p>
+        </div> : <>
+          <div style={{ background: C.pine + "18", border: "1px solid " + C.pine + "55", borderRadius: 12, padding: 13, marginBottom: 16, color: C.mute, fontSize: 12.5, lineHeight: 1.5 }}><b style={{ color: C.cream }}>Public discovery is on.</b> People only see your display name, general area, causes, and ways you help. Your email and phone stay private.</div>
+          {error && <div style={{ color: C.rust, fontSize: 13, marginBottom: 12 }}>{error}</div>}
+          {!people.length && <div style={{ border: "1px dashed " + C.line2, borderRadius: 14, padding: 24, textAlign: "center", color: C.mute, fontSize: 13.5 }}>No public volunteers are visible in your area yet. You will appear here for other nearby members.</div>}
+          <div style={{ display: "grid", gap: 12 }}>{people.map((person) => {
+            const connection = connectionFor(person.uid), common = shared(person);
+            const incoming = connection?.status === "pending" && connection.recipientId === userId;
+            return <article key={person.uid} style={{ background: C.card, border: "1px solid " + C.line, borderRadius: 15, padding: 15 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 11 }}>
+                <div style={{ width: 44, height: 44, borderRadius: "50%", background: `linear-gradient(135deg, ${C.rust}, ${C.gold})`, display: "grid", placeItems: "center", color: "#fff", fontWeight: 800 }}>{(person.displayName || "N")[0].toUpperCase()}</div>
+                <div style={{ flex: 1 }}><div style={{ color: C.cream, fontWeight: 700, fontFamily: "Georgia, serif", fontSize: 16 }}>{person.displayName}</div><div style={{ color: C.mute, fontSize: 12, display: "flex", alignItems: "center", gap: 4 }}><MapPin size={11} />{[person.city, person.region].filter(Boolean).join(", ") || "Your area"}</div></div>
+              </div>
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap", margin: "12px 0" }}>{(common.length ? common : person.causes || []).slice(0, 4).map((cause) => <span key={cause} style={{ fontSize: 10.5, color: CAUSE[cause]?.c || C.pine, border: "1px solid currentColor", borderRadius: 5, padding: "2px 6px" }}>{common.includes(cause) ? `Both care about ${cause}` : cause}</span>)}</div>
+              {incoming ? <div style={{ display: "flex", gap: 8 }}><button onClick={() => act(() => respondToConnection(connection.id, "accepted"), `You and ${person.displayName} are paired`)} style={{ flex: 1, border: "none", borderRadius: 9, padding: 10, background: C.pine, color: "#fff", fontWeight: 700, cursor: "pointer" }}>Accept</button><button onClick={() => act(() => respondToConnection(connection.id, "declined"), "Request declined")} style={{ flex: 1, border: "1px solid " + C.line2, borderRadius: 9, padding: 10, background: "transparent", color: C.mute, fontWeight: 700, cursor: "pointer" }}>Decline</button></div> :
+                <button disabled={Boolean(connection)} onClick={() => act(() => requestConnection(person), `Request sent to ${person.displayName}`)} style={{ width: "100%", border: "none", borderRadius: 9, padding: 10, background: connection?.status === "accepted" ? C.pine : connection ? C.line2 : C.cream, color: connection ? "#fff" : C.bg, fontWeight: 700, cursor: connection ? "default" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}><UserPlus size={15} />{connection?.status === "accepted" ? "Helping Pair" : connection?.status === "pending" ? "Request sent" : connection?.status === "declined" ? "Request declined" : "Connect to volunteer together"}</button>}
+            </article>;
+          })}</div>
+        </>}
+      </div>}
+  </div>;
+}
+
 function ProfilePage({ giver, follows, gifts, onEditProfile, onOpenSettings }) {
   const followed = ORGS.filter((o) => follows.has(o.id));
   const counts = {}; followed.forEach((o) => (counts[o.cause] = (counts[o.cause] || 0) + 1));
@@ -870,7 +920,7 @@ function ProfilePage({ giver, follows, gifts, onEditProfile, onOpenSettings }) {
       <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 20 }}>
         <div style={{ width: 56, height: 56, borderRadius: "50%", background: `linear-gradient(135deg, ${C.rust}, ${C.ember})`, color: "#fff", display: "grid", placeItems: "center", fontFamily: "Georgia, serif", fontWeight: 700, fontSize: 22 }}>{(giver.email || "O")[0].toUpperCase()}</div>
         <div style={{ flex: 1 }}>
-          <div style={{ fontFamily: "Georgia, serif", fontWeight: 700, fontSize: 20, color: C.cream }}>{giver.email ? giver.email.split("@")[0] : "Oli"}</div>
+          <div style={{ fontFamily: "Georgia, serif", fontWeight: 700, fontSize: 20, color: C.cream }}>{giver.displayName || (giver.email ? giver.email.split("@")[0] : "Volunteer")}</div>
           <div style={{ fontSize: 12.5, color: C.mute, display: "flex", alignItems: "center", gap: 5 }}><MapPin size={11} /> {[giver.city, giver.region, geo?.name].filter(Boolean).join(", ") || "Location not set"}</div></div>
         <button onClick={onOpenSettings} className="sc-tap" style={{ background: "none", border: "1.5px solid " + C.line2, borderRadius: 10, padding: 9, cursor: "pointer" }}><Settings size={18} color={C.cream} /></button></div>
       <div style={{ display: "flex", marginBottom: 20, border: "1px solid " + C.line, borderRadius: 12, overflow: "hidden" }}>
@@ -910,13 +960,24 @@ function SettingsScreen({ giver, setGiver, onClose, onEditProfile, onSignOut, on
       <div style={{ flex: 1, overflowY: "auto" }}>
         <div style={{ padding: "16px 16px 8px", fontSize: 11, letterSpacing: 1, color: C.faint }}>ACCOUNT</div>
         <Row label="Email" value={giver.email || "Not set"} />
-        <Row label="Phone" value={giver.phone ? `${geo.dial} ${giver.phone}` : "Not set"} />
+        <Row label="Phone" value={giver.phone ? `${geo?.dial || ""} ${giver.phone}` : "Not set"} />
         <Row label="Password" value="Send a secure reset email" onClick={async () => { try { await sendPasswordResetEmail(auth, giver.email); onToast("Password reset email sent"); } catch { onToast("Could not send reset email. Try again."); } }} />
         <div style={{ padding: "16px 16px 8px", fontSize: 11, letterSpacing: 1, color: C.faint }}>GIVING</div>
         <Row label="Causes you care about" value={giver.causes.join(", ") || "None"} onClick={onEditProfile} />
         <Row label="How you give" value={giver.gives.join(", ") || "None"} onClick={onEditProfile} />
         <Row label="Location" value={[giver.city, giver.region, geo?.name].filter(Boolean).join(", ") || "Not set"} onClick={onEditProfile} />
         <div style={{ padding: "16px 16px 8px", fontSize: 11, letterSpacing: 1, color: C.faint }}>PREFERENCES</div>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", background: C.paper2, borderBottom: "1px solid " + C.line }}>
+          {giver.theme === "light" ? <Sun size={20} color={C.gold} /> : <Moon size={20} color={C.slate} />}
+          <div style={{ flex: 1 }}><div style={{ fontSize: 13.5, color: C.cream, fontWeight: 600 }}>Light appearance</div><div style={{ fontSize: 12, color: C.mute, marginTop: 2 }}>{giver.theme === "light" ? "Warm light theme" : "Dark espresso theme"}</div></div>
+          <button aria-label="Toggle light appearance" onClick={() => setGiver((g) => ({ ...g, theme: g.theme === "light" ? "dark" : "light" }))} style={{ width: 46, height: 27, borderRadius: 14, background: giver.theme === "light" ? C.gold : C.line2, position: "relative", border: "none", cursor: "pointer" }}><div style={{ position: "absolute", top: 3, left: giver.theme === "light" ? 22 : 3, width: 21, height: 21, borderRadius: "50%", background: "#fff", transition: "left .2s" }} /></button>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", background: C.paper2, borderBottom: "1px solid " + C.line }}>
+          <ShieldCheck size={20} color={giver.isPublic ? C.pine : C.slate} />
+          <div style={{ flex: 1 }}><div style={{ fontSize: 13.5, color: C.cream, fontWeight: 600 }}>Public volunteer profile</div><div style={{ fontSize: 12, color: C.mute, marginTop: 2 }}>{giver.isPublic ? "Nearby members can find and pair with you" : "Private by default; nobody can discover you"}</div></div>
+          <button aria-label="Toggle public volunteer profile" onClick={() => { const next = !giver.isPublic; setGiver((g) => ({ ...g, isPublic: next })); onToast(next ? "Your volunteer profile is now public" : "Your profile is now private"); }} style={{ width: 46, height: 27, borderRadius: 14, background: giver.isPublic ? C.pine : C.line2, position: "relative", border: "none", cursor: "pointer" }}><div style={{ position: "absolute", top: 3, left: giver.isPublic ? 22 : 3, width: 21, height: 21, borderRadius: "50%", background: "#fff", transition: "left .2s" }} /></button>
+        </div>
+        <div style={{ padding: "10px 16px", background: C.paper, borderBottom: "1px solid " + C.line, color: C.faint, fontSize: 11.5, lineHeight: 1.5 }}>Public profiles show only your display name, city/region, causes, and helping preferences. Email and phone are never shared.</div>
         <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", background: C.paper2, borderBottom: "1px solid " + C.line }}>
           <div style={{ flex: 1 }}><div style={{ fontSize: 13.5, color: C.cream, fontWeight: 600 }}>Monthly newsletter</div><div style={{ fontSize: 12, color: C.mute, marginTop: 2 }}>{giver.newsletter ? "Subscribed" : "Not subscribed"}</div></div>
           <button onClick={() => { setGiver((g) => ({ ...g, newsletter: !g.newsletter })); onToast(giver.newsletter ? "Unsubscribed" : "Subscribed to newsletter"); }} style={{ width: 46, height: 27, borderRadius: 14, background: giver.newsletter ? C.pine : C.line2, position: "relative", border: "none", cursor: "pointer" }}>
@@ -932,20 +993,20 @@ function SettingsScreen({ giver, setGiver, onClose, onEditProfile, onSignOut, on
 // =======================================================================
 //  ROOT
 // =======================================================================
-export default function ShareCompass({ profile, saveProfile, onSignOut }) {
+export default function ShareCompass({ userId, profile, saveProfile, community, onSignOut }) {
   const [phase, setPhase] = useState("boot");
   const [tab, setTab] = useState("home");
   const [showSettings, setShowSettings] = useState(false);
   const [detail, setDetail] = useState(null);
   const [giveOrg, setGiveOrg] = useState(null);
-  const [gifts, setGifts] = useState([]);
+  const [gifts, setGifts] = useState(profile?.gifts || []);
   const [toast, setToast] = useState("");
   const toastRef = useRef();
   const fireToast = (m) => { setToast(m); clearTimeout(toastRef.current); toastRef.current = setTimeout(() => setToast(""), 2200); };
 
   useEffect(() => { if (phase !== "boot") return; const t = setTimeout(() => setPhase(profile?.onboarded ? "app" : "onboarding"), 900); return () => clearTimeout(t); }, [phase, profile?.onboarded]);
 
-  const [giver, setGiverState] = useState(() => ({ email: "", countryCode: "US", phone: "", causes: [], gives: [], region: "", city: "", newsletter: true, region2: "global", urgentOnly: false, ...profile }));
+  const [giver, setGiverState] = useState(() => ({ email: "", displayName: "", countryCode: "US", phone: "", causes: [], gives: [], region: "", city: "", newsletter: true, region2: "global", urgentOnly: false, isPublic: false, theme: "dark", ...profile }));
   const [follows, setFollows] = useState(() => new Set(profile?.follows || []));
   const setGiver = (next) => setGiverState((current) => {
     const value = typeof next === "function" ? next(current) : next;
@@ -970,10 +1031,12 @@ export default function ShareCompass({ profile, saveProfile, onSignOut }) {
   const dMatch = detail ? scoreMatch(giver, detail) : null;
   const NAV = [{ id: "home", label: "Home", icon: Home }, { id: "give", label: "Give", icon: Gift }, { id: "connect", label: "Connect", icon: Link2 }, { id: "help", label: "Find Help", icon: HandHeart }, { id: "profile", label: "Profile", icon: User }];
 
+  const theme = THEMES[giver.theme] || THEMES.dark;
+  const { outer, shadow, ...themeVars } = theme;
   const frame = (inner) => (
-    <div style={{ minHeight: "100vh", background: "#14100D", display: "grid", placeItems: "center", padding: 20, fontFamily: "'DM Sans', -apple-system, system-ui, sans-serif" }}>
+    <div style={{ ...themeVars, minHeight: "100vh", background: outer, display: "grid", placeItems: "center", padding: 20, fontFamily: "'DM Sans', -apple-system, system-ui, sans-serif", transition: "background .25s ease" }}>
       <MotionStyles />
-      <div style={{ width: 400, maxWidth: "100%", height: 820, background: C.paper, color: C.cream, borderRadius: 30, overflow: "hidden", position: "relative", display: "flex", flexDirection: "column", boxShadow: "0 30px 90px rgba(0,0,0,.6)", border: "1px solid #000" }}>
+      <div style={{ width: 400, maxWidth: "100%", height: 820, background: C.paper, color: C.cream, borderRadius: 30, overflow: "hidden", position: "relative", display: "flex", flexDirection: "column", boxShadow: `0 30px 90px ${shadow}`, border: "1px solid " + C.line }}>
         {inner}<Toast msg={toast} /></div>
     </div>
   );
@@ -991,12 +1054,12 @@ export default function ShareCompass({ profile, saveProfile, onSignOut }) {
   return frame(<>
     <div style={{ padding: "16px 18px 12px", background: C.paper2, color: C.cream, display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid " + C.line }}>
       <div style={{ display: "flex", alignItems: "center", gap: 9 }}><Compass size={20} color={C.ember} /><span style={{ fontFamily: "Georgia, serif", fontWeight: 700, fontSize: 18 }}>ShareCompass</span></div>
-      <span style={{ fontSize: 10, color: C.mute, border: "1px solid " + C.line2, padding: "2px 7px", borderRadius: 4, letterSpacing: 1 }}>V2</span></div>
+      <span style={{ fontSize: 10, color: C.mute, border: "1px solid " + C.line2, padding: "2px 7px", borderRadius: 4, letterSpacing: 1 }}>V2.2</span></div>
     <div style={{ flex: 1, overflowY: "auto" }}>
       <div key={tab} className="sc-page" style={{ minHeight: "100%" }}>
         {tab === "home" && <HomePage giver={giver} follows={follows} onFollow={onFollow} onOpen={setDetail} />}
         {tab === "give" && <GivePage giver={giver} follows={follows} onFollow={onFollow} onOpen={setDetail} />}
-        {tab === "connect" && <ConnectPage giver={giver} setGiver={setGiver} follows={follows} onFollow={onFollow} onOpen={setDetail} />}
+        {tab === "connect" && <ConnectHub giver={giver} setGiver={setGiver} follows={follows} onFollow={onFollow} onOpen={setDetail} community={community} userId={userId} onToast={fireToast} />}
         {tab === "help" && <FindHelpPage follows={follows} onFollow={onFollow} onOpen={setDetail} />}
         {tab === "profile" && <ProfilePage giver={giver} follows={follows} gifts={gifts} onEditProfile={() => setPhase("editProfile")} onOpenSettings={() => setShowSettings(true)} />}
       </div>

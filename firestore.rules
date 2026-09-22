@@ -4,5 +4,45 @@ service cloud.firestore {
     match /users/{userId} {
       allow read, create, update, delete: if request.auth != null && request.auth.uid == userId;
     }
+
+    match /publicProfiles/{userId} {
+      allow read: if request.auth != null && resource.data.isPublic == true;
+      allow create, update: if request.auth != null
+        && request.auth.uid == userId
+        && request.resource.data.uid == userId
+        && request.resource.data.isPublic == true
+        && request.resource.data.keys().hasOnly([
+          'uid', 'isPublic', 'displayName', 'countryCode', 'region', 'city',
+          'causes', 'gives', 'updatedAt'
+        ]);
+      allow delete: if request.auth != null && request.auth.uid == userId;
+    }
+
+    match /connections/{connectionId} {
+      allow create: if request.auth != null
+        && request.resource.data.status == 'pending'
+        && request.resource.data.requesterId == request.auth.uid
+        && request.resource.data.recipientId != request.auth.uid
+        && exists(/databases/$(database)/documents/publicProfiles/$(request.auth.uid))
+        && exists(/databases/$(database)/documents/publicProfiles/$(request.resource.data.recipientId))
+        && request.resource.data.participants.size() == 2
+        && request.resource.data.participants.hasAll([
+          request.resource.data.requesterId,
+          request.resource.data.recipientId
+        ]);
+
+      allow read: if request.auth != null
+        && resource.data.participants.hasAny([request.auth.uid]);
+
+      allow update: if request.auth != null
+        && request.auth.uid == resource.data.recipientId
+        && request.resource.data.status in ['accepted', 'declined']
+        && request.resource.data.participants == resource.data.participants
+        && request.resource.data.requesterId == resource.data.requesterId
+        && request.resource.data.recipientId == resource.data.recipientId;
+
+      allow delete: if request.auth != null
+        && resource.data.participants.hasAny([request.auth.uid]);
+    }
   }
 }

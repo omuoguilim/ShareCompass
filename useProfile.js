@@ -4,14 +4,26 @@
 import { useState, useEffect, useCallback } from "react";
 import { auth, db } from "./firebase";
 import { onAuthStateChanged } from "firebase/auth";
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import { deleteDoc, doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
 
 // The shape we store per user. Mirrors the app's in-memory `giver` + follows + gifts.
 const EMPTY = {
-  email: "", countryCode: "US", phone: "", causes: [], gives: [],
+  email: "", displayName: "", countryCode: "US", phone: "", causes: [], gives: [],
   region: "", city: "", newsletter: true, region2: "global",
-  follows: [], gifts: [], onboarded: false,
+  follows: [], gifts: [], onboarded: false, isPublic: false, theme: "dark",
 };
+
+const publicProfile = (uid, profile) => ({
+  uid,
+  isPublic: true,
+  displayName: profile.displayName || "ShareCompass neighbor",
+  countryCode: profile.countryCode || "US",
+  region: profile.region || "",
+  city: profile.city || "",
+  causes: profile.causes || [],
+  gives: profile.gives || [],
+  updatedAt: serverTimestamp(),
+});
 
 export function useProfile() {
   const [user, setUser] = useState(undefined); // undefined = still checking, null = logged out
@@ -47,13 +59,20 @@ export function useProfile() {
   // Save a partial update to Firestore (merges, doesn't overwrite the whole doc).
   const saveProfile = useCallback(async (patch) => {
     if (!user) return;
-    setProfile((p) => ({ ...(p || EMPTY), ...patch })); // optimistic local update
+    const next = { ...(profile || EMPTY), ...patch };
+    setProfile(next);
     try {
       await setDoc(doc(db, "users", user.uid), patch, { merge: true });
+      if (next.isPublic) {
+        await setDoc(doc(db, "publicProfiles", user.uid), publicProfile(user.uid, next));
+      } else {
+        await deleteDoc(doc(db, "publicProfiles", user.uid));
+      }
     } catch (e) {
       console.error("Profile save failed:", e);
+      throw e;
     }
-  }, [user]);
+  }, [profile, user]);
 
   return { user, profile, loading, saveProfile };
 }

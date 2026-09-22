@@ -11,9 +11,18 @@ ShareCompass is a responsive React app for discovering established nonprofit org
 - Personalized matching with plain-language reasons
 - Official organization website handoff for real donations and volunteering
 - Password-reset email, sign-out, responsive mobile layout, and accessible keyboard focus
+- Warm light and dark appearance modes saved per account
+- Private-by-default member profiles with an optional sanitized public volunteer profile
+- Helping Pair discovery for nearby public members, including connection requests and accept/decline controls
 - Session-safe demo flow for the clearly labeled illustrative community request
 
 ShareCompass never collects card details for real organizations. The **Visit & give** action opens the organization's listed official website in a new tab.
+
+## Privacy model
+
+Every account starts private. Private account documents live under `users/{uid}` and are readable only by their owner. When a member explicitly enables public discovery, ShareCompass creates a separate sanitized `publicProfiles/{uid}` document containing only display name, general area, causes, and helping preferences. Email addresses and phone numbers are never copied into public profiles. Turning discovery off deletes the public profile immediately.
+
+Helping Pair connection records are readable only by their two participants. Only the recipient can accept or decline a pending request.
 
 ## Run locally
 

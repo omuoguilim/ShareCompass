@@ -3,9 +3,11 @@ import { auth } from "./firebase.js";
 import { signOut } from "firebase/auth";
 import AuthScreen from "./AuthScreen.jsx";
 import ShareCompass from "./ShareCompass.jsx";
+import { useCommunity } from "./useCommunity.js";
 
 export default function App() {
   const { user, profile, loading, saveProfile } = useProfile();
+  const community = useCommunity(user && user !== undefined ? user : null, profile);
 
   if (user === undefined || (user && loading)) {
     return (
@@ -18,5 +20,5 @@ export default function App() {
 
   if (!user) return <AuthScreen />;
 
-  return <ShareCompass profile={profile} saveProfile={saveProfile} onSignOut={() => signOut(auth)} />;
+  return <ShareCompass userId={user.uid} profile={profile} saveProfile={saveProfile} community={community} onSignOut={() => signOut(auth)} />;
 }
