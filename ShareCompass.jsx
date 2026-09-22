@@ -7,6 +7,7 @@ import {
   Heart, ShieldCheck, ChevronDown, Sun, Moon, Users, UserPlus,
 } from "lucide-react";
 import { EXTRA_ORGS } from "./organizations.js";
+import { US_CITIES_BY_STATE, US_STATES } from "./usCities.js";
 import { sendPasswordResetEmail } from "firebase/auth";
 import { auth } from "./firebase.js";
 
@@ -19,9 +20,8 @@ import { auth } from "./firebase.js";
    - Verification, payments, and persistence are SIMULATED in-file. Real builds call
      an auth provider (Firebase/Twilio), a processor (Stripe), and a DB. Every seam is
      marked "// BACKEND:". No browser storage is used; state lives for the session.
-   - No hotlinked photos (they break in a sandbox). Each org gets generated SVG cover
-     art derived from its cause + name — unique, never-broken. To use real photos later,
-     set org.image to a URL and CoverArt will render it instead.
+   - Real organizations use a preview of their official website plus the site's logo.
+     Generated artwork remains available as a resilient fallback if a remote asset fails.
 */
 
 // ---------- Palette: deep, warm, moody (more depth than the bright v3) ----------
@@ -59,7 +59,7 @@ const CAUSE = {
   Education: { c: C.gold,  g: ["#5A4A22", "#D9A441"], tag: "Learning & schools" },
 };
 const GEO = {
-  US: { name: "United States", dial: "+1", regions: ["Alabama","Alaska","Arizona","Arkansas","California","Colorado","Connecticut","Delaware","Florida","Georgia","Hawaii","Idaho","Illinois","Indiana","Iowa","Kansas","Kentucky","Louisiana","Maine","Maryland","Massachusetts","Michigan","Minnesota","Mississippi","Missouri","Montana","Nebraska","Nevada","New Hampshire","New Jersey","New Mexico","New York","North Carolina","North Dakota","Ohio","Oklahoma","Oregon","Pennsylvania","Rhode Island","South Carolina","South Dakota","Tennessee","Texas","Utah","Vermont","Virginia","Washington","West Virginia","Wisconsin","Wyoming"], cities: ["New York","Los Angeles","Chicago","Houston","Phoenix","Philadelphia","San Antonio","San Diego","Dallas","Atlanta","Miami","Seattle","Boston","Denver","Austin","San Francisco","Washington DC"] },
+  US: { name: "United States", dial: "+1", regions: US_STATES, cities: [] },
   CA: { name: "Canada", dial: "+1", regions: ["Alberta","British Columbia","Manitoba","New Brunswick","Newfoundland and Labrador","Nova Scotia","Ontario","Prince Edward Island","Quebec","Saskatchewan","Northwest Territories","Nunavut","Yukon"], cities: ["Toronto","Montreal","Vancouver","Calgary","Edmonton","Ottawa","Winnipeg","Quebec City","Hamilton","Halifax"] },
   GB: { name: "United Kingdom", dial: "+44", regions: ["England","Scotland","Wales","Northern Ireland"], cities: ["London","Manchester","Birmingham","Leeds","Glasgow","Liverpool","Bristol","Edinburgh","Cardiff","Belfast","Sheffield","Newcastle"] },
   IE: { name: "Ireland", dial: "+353", regions: ["Leinster","Munster","Connacht","Ulster"], cities: ["Dublin","Cork","Limerick","Galway","Waterford"] },
@@ -166,16 +166,38 @@ const CORE_ORGS = [
     blurb: "Home damaged in recent hurricane flooding. A neighbor-posted request for help with essential repairs and supplies." },
 ];
 
-const ORGS = [...CORE_ORGS, ...EXTRA_ORGS];
+const addBrandAssets = (org) => {
+  if (!org.real || !org.handle) return org;
+  const website = org.website || `https://${org.handle}`;
+  return {
+    ...org,
+    website,
+    image: org.image || `https://image.thum.io/get/width/1000/crop/600/noanimate/${website}`,
+    logo: org.logo || `https://www.google.com/s2/favicons?domain_url=${encodeURIComponent(website)}&sz=128`,
+  };
+};
+
+const ORGS = [...CORE_ORGS, ...EXTRA_ORGS].map(addBrandAssets);
 
 // ---------- Generated cover art (full-bleed scene per org; unique via name hash) ----------
 function hashStr(s) { let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0; return Math.abs(h); }
 
 function CoverArt({ org, height = 120, radius = 0 }) {
-  // If a real photo URL is ever provided, use it (backend seam).
-  if (org.image) {
-    return <div style={{ height, borderRadius: radius, backgroundImage: `url(${org.image})`,
-      backgroundSize: "cover", backgroundPosition: "center" }} />;
+  const [assetFailed, setAssetFailed] = useState(false);
+  const [logoFailed, setLogoFailed] = useState(false);
+  const imageUrl = org.image || "";
+  const logoUrl = org.logo || "";
+
+  if (imageUrl && !assetFailed) {
+    return <div style={{ height, borderRadius: radius, overflow: "hidden", position: "relative", background: CAUSE[org.cause].g[0] }}>
+      <img src={imageUrl} alt={`${org.name} official website`} onError={() => setAssetFailed(true)}
+        loading="lazy" referrerPolicy="no-referrer" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center top", display: "block" }} />
+      <div style={{ position: "absolute", inset: 0, background: "linear-gradient(90deg, rgba(16,13,11,.62), rgba(16,13,11,.08) 68%, rgba(16,13,11,.2))" }} />
+      {logoUrl && !logoFailed && <div style={{ position: "absolute", left: 12, bottom: 10, width: 48, height: 48, borderRadius: 12, background: "rgba(255,255,255,.96)", padding: 7, boxShadow: "0 5px 18px rgba(0,0,0,.28)", display: "grid", placeItems: "center" }}>
+        <img src={logoUrl} alt={`${org.name} logo`} onError={() => setLogoFailed(true)} loading="lazy"
+          style={{ width: "100%", height: "100%", objectFit: "contain", display: "block" }} />
+      </div>}
+    </div>;
   }
   const meta = CAUSE[org.cause];
   const [c0, c1] = meta.g;
@@ -632,6 +654,7 @@ function Onboarding({ onComplete, initial }) {
   const [d, setD] = useState(initial || { email: "", password: "", countryCode: "US", phone: "", causes: [], gives: [], region: "", city: "", newsletter: true });
   const set = (k, v) => setD((p) => ({ ...p, [k]: v }));
   const geo = GEO[d.countryCode];
+  const cityOptions = d.countryCode === "US" ? (US_CITIES_BY_STATE[d.region] || []) : geo.cities;
   const [sentCode, setSentCode] = useState(null);
   const [entered, setEntered] = useState("");
   const [codeErr, setCodeErr] = useState("");
@@ -724,9 +747,10 @@ function Onboarding({ onComplete, initial }) {
       <Autocomplete icon={Globe2} placeholder="Start typing your country…" value={d._ctext ?? geo.name} options={countryNames}
         onChange={(v) => { set("_ctext", v); const code = codeByName(v); if (code) { set("countryCode", code); set("region", ""); set("city", ""); set("_ctext", GEO[code].name); } }} />
       <div style={{ fontSize: 11, color: C.faint, letterSpacing: 1, margin: "6px 0 8px" }}>REGION / STATE</div>
-      <Autocomplete icon={MapPin} placeholder="Start typing your region…" value={d.region} options={geo.regions} onChange={(v) => set("region", v)} />
+      <Autocomplete icon={MapPin} placeholder="Start typing your region…" value={d.region} options={geo.regions} onChange={(v) => setD((p) => ({ ...p, region: v, city: "" }))} />
       <div style={{ fontSize: 11, color: C.faint, letterSpacing: 1, margin: "6px 0 8px" }}>CITY (RECOMMENDED FOR LOCAL PAIRING)</div>
-      <Autocomplete icon={MapPin} placeholder="Start typing your city…" value={d.city} options={geo.cities} onChange={(v) => set("city", v)} />
+      <Autocomplete icon={MapPin} placeholder={d.countryCode === "US" && !d.region ? "Choose a state first…" : "Start typing your city…"} value={d.city} options={cityOptions} onChange={(v) => set("city", v)} />
+      {d.countryCode === "US" && d.region && <div style={{ fontSize: 11.5, color: C.faint, margin: "-6px 2px 10px" }}>{cityOptions.length.toLocaleString()} Census-recognized places available in {d.region}.</div>}
     </StepScaffold>
   );
 

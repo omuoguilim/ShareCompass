@@ -14,6 +14,8 @@ ShareCompass is a responsive React app for discovering established nonprofit org
 - Warm light and dark appearance modes saved per account
 - Private-by-default member profiles with an optional sanitized public volunteer profile
 - Helping Pair discovery for nearby public members, including connection requests and accept/decline controls
+- State-aware U.S. city search backed by the U.S. Census Bureau National Places Gazetteer
+- Official-site previews and organization logos on every real nonprofit card, with resilient illustrated fallbacks
 - Session-safe demo flow for the clearly labeled illustrative community request
 
 ShareCompass never collects card details for real organizations. The **Visit & give** action opens the organization's listed official website in a new tab.

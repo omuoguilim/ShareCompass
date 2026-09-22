@@ -3,7 +3,7 @@
 const org = (id, name, handle, loc, country, cause, types, urgent = false) => ({
   id, real: true, name, handle, website: `https://${handle}`, loc,
   region: "global", country, cause, urgent, types, following: 0,
-  need: urgent ? 82 : 55, image: null,
+  need: urgent ? 82 : 55, image: null, logo: null,
   blurb: `Explore ${name}'s current ${cause.toLowerCase()} programs, ways to volunteer, and verified giving options on its official website.`,
 });
 
