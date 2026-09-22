@@ -1,0 +1,10 @@
+{
+  "name": "ShareCompass",
+  "short_name": "ShareCompass",
+  "description": "Discover nonprofits, give with purpose, find assistance, and volunteer with people nearby.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#211C18",
+  "theme_color": "#211C18",
+  "orientation": "portrait-primary"
+}
