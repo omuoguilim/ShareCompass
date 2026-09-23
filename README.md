@@ -1,48 +1,75 @@
+<p align="center"><img src="docs/brand/sharecompass.svg" alt="ShareCompass compass mark" width="120"></p>
+
 # ShareCompass
 
-ShareCompass is a responsive React app for discovering established nonprofit organizations by cause, location, urgency, and preferred way of helping. Its warm field-guide interface deliberately avoids the generic bright-card dashboard look common in generated prototypes.
+A web app for finding nonprofit organizations and people to volunteer with. Choose the causes you care about, explore organizations, and follow their official websites when you are ready to help.
 
-## What works
+This repository contains the current **React web implementation**, not the original Flutter app.
 
-- Firebase email/password authentication
-- Firestore-backed onboarding preferences, follows, newsletter choice, and demo pledges
-- A searchable catalog of 79 established organizations, including 66 newly added entries
-- Cause, giving-mode, reach, and urgency filters
-- Personalized matching with plain-language reasons
-- Official organization website handoff for real donations and volunteering
-- Password-reset email, sign-out, responsive mobile layout, and accessible keyboard focus
-- Warm light and dark appearance modes saved per account
-- Private-by-default member profiles with an optional sanitized public volunteer profile
-- Helping Pair discovery for nearby public members, including connection requests and accept/decline controls
-- State-aware U.S. city search backed by the U.S. Census Bureau National Places Gazetteer
-- Official-site previews and organization logos on every real nonprofit card, with resilient illustrated fallbacks
-- Session-safe demo flow for the clearly labeled illustrative community request
+## What you can do
 
-ShareCompass never collects card details for real organizations. The **Visit & give** action opens the organization's listed official website in a new tab.
+- Search a catalog of 79 established organizations.
+- Filter by cause, giving mode, reach and urgency.
+- See matching reasons based on onboarding preferences.
+- Follow organizations and save preferences to your account.
+- Discover public volunteer profiles through Helping Pair and send or respond to connection requests.
+- Search U.S. cities by state.
+- Sign up, sign in, reset a password and sign out.
+- Switch between light and dark appearance.
 
-## Privacy model
+Real donations and volunteering are handled on organizations' official websites. ShareCompass does not collect payment-card details. The illustrative community request saves a demo pledge; it does not transfer money. Newsletter choice is stored as a preference, not a claim that an email-delivery service is running.
 
-Every account starts private. Private account documents live under `users/{uid}` and are readable only by their owner. When a member explicitly enables public discovery, ShareCompass creates a separate sanitized `publicProfiles/{uid}` document containing only display name, general area, causes, and helping preferences. Email addresses and phone numbers are never copied into public profiles. Turning discovery off deletes the public profile immediately.
+## Built with
 
-Helping Pair connection records are readable only by their two participants. Only the recipient can accept or decline a pending request.
+React 19, Vite 7, Firebase Authentication, Cloud Firestore and Lucide icons. Vitest covers selected organization, city-search and privacy behavior.
 
 ## Run locally
 
-```bash
-npm install
+Use Node.js 22.12 or newer and npm.
+
+```sh
+git clone https://github.com/omuoguilim/ShareCompass.git
+cd ShareCompass
+npm ci
+cp .env.example .env
 npm run dev
 ```
 
-Copy `.env.example` to `.env` if you move the app to a different Firebase project. The included Firebase project configuration is a public client configuration; access control must come from Authentication and the included `firestore.rules`.
+Fill the `VITE_FIREBASE_*` variables in `.env` with the client configuration for your own Firebase project. Enable email/password authentication, create a Firestore database and configure the appropriate authorized domains. Deploy the included `firestore.rules` before using account data.
 
-## Quality checks
+The source includes fallback Firebase client configuration. Client configuration is public; it does not replace database authorization. Use your own project for development instead of writing test accounts into someone else's database.
 
-```bash
+## Checks and build
+
+```sh
 npm test
-npm run build
 npm run lint
+npm run build
+npm run preview
 ```
 
-## Firebase deployment note
+The production frontend is generated in `dist/`. Firebase setup and rules deployment are separate from the frontend build.
 
-Deploy `firestore.rules` before using production data. Each signed-in user may read and write only their own `users/{uid}` document.
+## Privacy model
+
+Accounts start private. Account documents under `users/{uid}` are owner-only. Opting into discovery creates a separate `publicProfiles/{uid}` document with display name, general location, causes and helping preferences. Email and phone details are not copied into that public document. Signed-in members can read discoverable profiles.
+
+Turning discovery off removes the public profile. Connection records are limited to their two participants, and only the recipient can accept or decline a pending request.
+
+## Code map
+
+| File | Purpose |
+| --- | --- |
+| `App.jsx`, `AuthScreen.jsx` | Authentication and application entry |
+| `ShareCompass.jsx` | Onboarding, discovery and main screens |
+| `organizations.js` | Organization catalog and related helpers |
+| `usCities.js` | U.S. city data |
+| `useProfile.js` | Account preferences |
+| `useCommunity.js` | Public profiles and connections |
+| `firestore.rules` | Database access rules |
+
+## Current boundaries
+
+The organization catalog is maintained in the repository, not a live feed of every organization's opportunities. Confirm availability on the official site. Location matches do not establish a person's identity or vet a volunteering arrangement.
+
+The compass mark in this README reuses the app's Lucide Compass icon. See [icon attribution](docs/brand/ATTRIBUTION.md).
