@@ -2,22 +2,36 @@
 
 # ShareCompass
 
-A web app for finding nonprofit organizations and people to volunteer with. Choose the causes you care about, explore organizations, and follow their official websites when you are ready to help.
+A place to find causes you care about and people to volunteer with.
 
-This repository contains the current **React web implementation**, not the original Flutter app.
+ShareCompass starts with a simple question: where can I actually help? Explore nonprofit organizations, narrow the list by your interests and follow their official sites to take the next step. Helping Pair adds a social side, so volunteering does not have to start alone.
 
-## What you can do
+This repository contains the React web version. The original project was a Flutter app.
 
-- Search a catalog of 79 established organizations.
-- Filter by cause, giving mode, reach and urgency.
-- See matching reasons based on onboarding preferences.
-- Follow organizations and save preferences to your account.
-- Discover public volunteer profiles through Helping Pair and send or respond to connection requests.
-- Search U.S. cities by state.
-- Sign up, sign in, reset a password and sign out.
-- Switch between light and dark appearance.
+## Explore the app
 
-Real donations and volunteering are handled on organizations' official websites. ShareCompass does not collect payment-card details. The illustrative community request saves a demo pledge; it does not transfer money. Newsletter choice is stored as a preference, not a claim that an email-delivery service is running.
+- **Find a cause:** search 79 organizations and filter by cause, giving mode, reach and urgency.
+- **Understand your matches:** see why an organization fits your onboarding preferences.
+- **Keep your favorites:** follow organizations and save your preferences.
+- **Find someone to help with:** opt into Helping Pair, discover public volunteer profiles and send or respond to connection requests.
+- **Choose your location:** search U.S. cities by state.
+- **Make it yours:** switch between light and dark appearance and manage your profile visibility.
+
+## A few things to try
+
+1. **Pick two different causes.** Explore interests such as education and the environment, then read the matching explanations.
+2. **Narrow your search.** Combine a cause with another filter and see which organizations remain.
+3. **Find one organization you would actually help.** Follow it, then visit its official website for current opportunities.
+4. **Try Helping Pair with two test accounts in your own Firebase project.** Make both discoverable, send a connection request and accept it from the other account.
+5. **Go private again.** Turn discovery off and check that your profile disappears from the other account's discovery view.
+
+## A part of the build worth looking at
+
+Helping Pair keeps private account details separate from discoverable profiles. Opting into discovery shares a smaller profile, not the entire account document. The recipient decides whether to accept a connection request.
+
+## What is a demo?
+
+Donations and volunteering happen on organizations' official websites. ShareCompass does not process payments. The example community request records a demo pledge, and the newsletter toggle stores a preference; neither sends money or starts an email subscription.
 
 ## Built with
 
