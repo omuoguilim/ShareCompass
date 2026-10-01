@@ -11,20 +11,9 @@ import { US_CITIES_BY_STATE, US_STATES } from "./usCities.js";
 import { sendPasswordResetEmail } from "firebase/auth";
 import { auth } from "./firebase.js";
 
-/*
-  ShareCompass v2, a worldwide giving platform.
+/* Organization discovery, sample pledges and community connections. */
 
-  HONESTY / BACKEND NOTES
-   - Orgs with real:true are real, verifiable nonprofits (focus & domains accurate;
-     figures illustrative). demo:true entries are illustrative individual requests.
-   - Verification, payments, and persistence are SIMULATED in-file. Real builds call
-     an auth provider (Firebase/Twilio), a processor (Stripe), and a DB. Every seam is
-     marked "// BACKEND:". No browser storage is used; state lives for the session.
-   - Real organizations use a preview of their official website plus the site's logo.
-     Generated artwork remains available as a resilient fallback if a remote asset fails.
-*/
-
-// ---------- Palette: deep, warm, moody (more depth than the bright v3) ----------
+// ---------- Color palette ----------
 const C = {
   bg:     "var(--sc-bg)",
   paper:  "var(--sc-paper)",
@@ -47,7 +36,7 @@ const THEMES = {
   light: { "--sc-bg": "#F4EFE7", "--sc-paper": "#FBF8F2", "--sc-paper-2": "#F0E8DC", "--sc-card": "#FFFDF9", "--sc-line": "#DED2C3", "--sc-line-2": "#CDBEAD", "--sc-text": "#2A211B", "--sc-muted": "#6E6257", "--sc-faint": "#918477", outer: "#E9DFD2", shadow: "rgba(78,55,38,.2)" },
 };
 
-// Cause -> accent + a two-color scene gradient for generated cover art
+// Cause colors and fallback illustration gradients
 const CAUSE = {
   Disaster:  { c: C.rust,  g: ["#7A2E1A", "#D2683C"], tag: "Emergency response", image: "https://image.thum.io/get/width/700/crop/420/noanimate/https://teamrubiconusa.org" },
   Hunger:    { c: C.pine,  g: ["#274237", "#6BA88C"], tag: "Food and nutrition", image: "https://image.thum.io/get/width/700/crop/420/noanimate/https://feedingamerica.org" },
@@ -123,7 +112,7 @@ const GEO = {
 
 const COUNTRY_CODES = Object.keys(GEO);
 
-// ---------- Orgs (real, worldwide). org.image left null -> generated cover art. ----------
+// ---------- Organization catalog. Missing images use a fallback illustration. ----------
 const CORE_ORGS = [
   { id: 1, real: true, name: "Direct Relief", handle: "directrelief.org", loc: "Global", region: "global", country: "US",
     cause: "Health", urgent: true, types: ["Money", "Goods"], following: 24800, need: 95, image: null,
@@ -179,7 +168,7 @@ const addBrandAssets = (org) => {
 
 const ORGS = [...CORE_ORGS, ...EXTRA_ORGS].map(addBrandAssets);
 
-// ---------- Generated cover art (full-bleed scene per org; unique via name hash) ----------
+// ---------- Fallback cover illustrations ----------
 function hashStr(s) { let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0; return Math.abs(h); }
 
 function CoverArt({ org, height = 120, radius = 0 }) {
@@ -474,7 +463,7 @@ function DetailSheet({ org, match, following, onFollow, onClose, onGive }) {
           <div style={{ fontFamily: "inherit", fontWeight: 700, fontSize: 23, color: C.cream }}>{org.name}</div>
           <div style={{ fontSize: 13, color: C.mute, display: "flex", alignItems: "center", gap: 5, marginTop: 3 }}><MapPin size={12} /> {org.loc} · {org.handle}</div>
           {org.real && <div style={{ fontSize: 12, color: C.pine, display: "flex", alignItems: "center", gap: 6, marginTop: 10 }}><ShieldCheck size={14} /> Official website listed</div>}
-          {org.demo && <div style={{ fontSize: 12, color: C.mute, background: C.paper2, borderRadius: 8, padding: "8px 11px", marginTop: 10 }}>Illustrative community request, shown to demonstrate individual giving.</div>}
+          {org.demo && <div style={{ fontSize: 12, color: C.mute, background: C.paper2, borderRadius: 8, padding: "8px 11px", marginTop: 10 }}>Sample request. No money is collected.</div>}
           {match && (
             <div style={{ border: "1px solid " + C.line, borderRadius: 12, padding: 14, margin: "16px 0", background: C.paper2 }}>
               <div style={{ fontSize: 12.5, fontWeight: 700, color: C.gold, display: "flex", alignItems: "center", gap: 6, marginBottom: 8, fontFamily: "inherit" }}>
@@ -576,7 +565,7 @@ function GiveFlow({ org, onClose, onDone }) {
         <div style={{ flex: 1, overflowY: "auto", padding: 20 }}>
           <div style={{ background: C.paper2, border: "1px solid " + C.line, borderRadius: 14, padding: 18 }}>
             <div style={{ fontFamily: "inherit", fontWeight: 700, fontSize: 18, color: C.cream, marginBottom: 8 }}>No payment details needed</div>
-            <p style={{ fontSize: 13.5, color: C.mute, lineHeight: 1.6, margin: 0 }}>This community request is illustrative. ShareCompass will save a private pledge to your profile, but it will not charge you or send money.</p>
+            <p style={{ fontSize: 13.5, color: C.mute, lineHeight: 1.6, margin: 0 }}>Save a pledge for this sample request. No charge or money transfer.</p>
           </div>
         </div>
         <div style={{ padding: 20, borderTop: "1px solid " + C.line }}>
@@ -657,7 +646,7 @@ function Onboarding({ onComplete, initial }) {
   const [codeErr, setCodeErr] = useState("");
   const [resendIn, setResendIn] = useState(0);
   useEffect(() => { if (resendIn <= 0) return; const t = setTimeout(() => setResendIn((s) => s - 1), 1000); return () => clearTimeout(t); }, [resendIn]);
-  const sendCode = () => { const c = String(Math.floor(1000 + Math.random() * 9000)); setSentCode(c); setEntered(""); setCodeErr(""); setResendIn(30); }; // BACKEND: Twilio Verify
+  const sendCode = () => { const c = String(Math.floor(1000 + Math.random() * 9000)); setSentCode(c); setEntered(""); setCodeErr(""); setResendIn(30); }; // Local verification example; no SMS delivery.
   const next = () => setStep((s) => ({ 1: 6, 6: 7, 7: 8, 8: 9 }[s] || 9));
   const back = () => setStep((s) => ({ 9: 8, 8: 7, 7: 6, 6: 1 }[s] || 1));
   const toggle = (k, v) => set(k, d[k].includes(v) ? d[k].filter((x) => x !== v) : [...d[k], v]);
@@ -731,7 +720,7 @@ function Onboarding({ onComplete, initial }) {
           <RefreshCw size={14} /> {resendIn > 0 ? `Resend in ${resendIn}s` : "Resend code"}</button>
       </div>
       <div style={{ marginTop: 18, textAlign: "center", fontSize: 11.5, color: C.mute, background: C.paper2, borderRadius: 8, padding: "8px 10px" }}>
-        This is a demo, so no text was sent. Your code is <b style={{ color: C.cream, letterSpacing: 2 }}>{sentCode}</b></div>
+        Sample verification code (no SMS sent): <b style={{ color: C.cream, letterSpacing: 2 }}>{sentCode}</b></div>
     </StepScaffold>
   );
 

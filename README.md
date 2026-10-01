@@ -25,13 +25,13 @@ This repository contains the React web version. The original project was a Flutt
 4. **Try Helping Pair with two test accounts in your own Firebase project.** Make both discoverable, send a connection request and accept it from the other account.
 5. **Go private again.** Turn discovery off and check that your profile disappears from the other account's discovery view.
 
-## A part of the build worth looking at
+## Helping Pair privacy
 
 Helping Pair keeps private account details separate from discoverable profiles. Opting into discovery shares a smaller profile, not the entire account document. The recipient decides whether to accept a connection request.
 
-## What is a demo?
+## Donations and sample requests
 
-Donations and volunteering happen on organizations' official websites. ShareCompass does not process payments. The example community request records a demo pledge, and the newsletter toggle stores a preference; neither sends money or starts an email subscription.
+Donations and volunteering happen on organizations' official websites. ShareCompass does not process payments. The example community request lets you save a sample pledge, and the newsletter toggle stores a preference; neither sends money or starts an email subscription.
 
 ## Built with
 
