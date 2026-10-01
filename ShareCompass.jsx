@@ -166,8 +166,8 @@ const addBrandAssets = (org) => {
   return {
     ...org,
     website,
-    image: org.image || CAUSE[org.cause].image,
-    imageAlt: org.imageAlt || CAUSE[org.cause].alt,
+    image: org.image || null,
+    imageAlt: org.imageAlt || "",
     logo: org.sourceName ? null : org.logo || `https://www.google.com/s2/favicons?domain_url=${encodeURIComponent(website)}&sz=128`,
   };
 };
@@ -192,7 +192,7 @@ function CoverArt({ org, height = 120, radius = 0 }) {
 
   if (imageUrl && !assetFailed) {
     return <div style={{ height, borderRadius: radius, overflow: "hidden", position: "relative", background: CAUSE[org.cause].g[0] }}>
-      <img src={imageUrl} alt={org.imageAlt || CAUSE[org.cause].alt} onError={() => setAssetFailed(true)}
+      <img src={imageUrl} alt={org.imageAlt || (String(org.id).startsWith("c") ? CAUSE[org.cause].alt : `${org.name} initiative`)} onError={() => setAssetFailed(true)}
         loading="lazy" referrerPolicy="no-referrer" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center", display: "block" }} />
       <div style={{ position: "absolute", inset: 0, background: "linear-gradient(90deg, rgba(16,13,11,.62), rgba(16,13,11,.08) 68%, rgba(16,13,11,.2))" }} />
       {logoUrl && !logoFailed && <div style={{ position: "absolute", left: 12, bottom: 10, width: 48, height: 48, borderRadius: 12, background: "rgba(255,255,255,.96)", padding: 7, boxShadow: "0 5px 18px rgba(0,0,0,.28)", display: "grid", placeItems: "center" }}>
@@ -201,45 +201,7 @@ function CoverArt({ org, height = 120, radius = 0 }) {
       </div>}
     </div>;
   }
-  const meta = CAUSE[org.cause];
-  const [c0, c1] = meta.g;
-  const h = hashStr(org.name);
-  const gid = "g" + org.id, motif = h % 4;
-  return (
-    <div style={{ height, borderRadius: radius, overflow: "hidden", position: "relative" }}>
-      <svg width="100%" height={height} viewBox={`0 0 320 ${height}`} preserveAspectRatio="xMidYMid slice"
-        style={{ display: "block" }}>
-        <defs>
-          <linearGradient id={gid} x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0" stopColor={c0} /><stop offset="1" stopColor={c1} />
-          </linearGradient>
-        </defs>
-        <rect width="320" height={height} fill={`url(#${gid})`} />
-        {/* layered translucent motifs give the scene depth */}
-        {motif === 0 && <>
-          <circle cx="250" cy={height * 0.3} r="52" fill="#fff" opacity=".08" />
-          <circle cx="285" cy={height * 0.2} r="26" fill="#fff" opacity=".1" />
-          <path d={`M0 ${height} Q80 ${height*0.55} 160 ${height*0.8} T320 ${height*0.7} V${height} Z`} fill="#000" opacity=".16" />
-        </>}
-        {motif === 1 && <>
-          <path d={`M0 ${height} L70 ${height*0.4} L130 ${height} Z`} fill="#000" opacity=".18" />
-          <path d={`M90 ${height} L180 ${height*0.28} L270 ${height} Z`} fill="#000" opacity=".12" />
-          <path d={`M210 ${height} L285 ${height*0.5} L320 ${height*0.75} V${height} Z`} fill="#fff" opacity=".07" />
-        </>}
-        {motif === 2 && <>
-          {[0,1,2,3,4,5].map(i => (
-            <rect key={i} x={i*58} y={height - (18 + (hashStr(org.name+i)%Math.round(height*0.55)))}
-              width="34" height={height} rx="3" fill={i%2? "#000":"#fff"} opacity={i%2? .14:.06} />
-          ))}
-        </>}
-        {motif === 3 && <>
-          <circle cx="60" cy={height*0.4} r="40" fill="#fff" opacity=".07" />
-          <path d={`M0 ${height*0.75} C 80 ${height*0.55}, 160 ${height*0.9}, 320 ${height*0.6} L320 ${height} L0 ${height} Z`} fill="#000" opacity=".18" />
-          <path d={`M0 ${height*0.85} C 90 ${height*0.7}, 180 ${height}, 320 ${height*0.78} L320 ${height} L0 ${height} Z`} fill="#000" opacity=".12" />
-        </>}
-      </svg>
-    </div>
-  );
+  return null;
 }
 
 // small square crest (kept for avatars in feed / detail)
@@ -397,13 +359,13 @@ function Toast({ msg }) {
     zIndex: 45, boxShadow: "0 10px 30px rgba(0,0,0,.4)", whiteSpace: "nowrap" }}>{msg}</div>;
 }
 
-// ---------- Org card (with generated cover art header) ----------
+// ---------- Organization card ----------
 function OrgCard({ org, match, following, onFollow, onOpen, primaryLabel = "Explore" }) {
   const m = CAUSE[org.cause];
   return (
     <article onClick={onOpen} className="sc-tap" style={{ background: C.card, border: "1px solid " + C.line,
       borderRadius: 16, overflow: "hidden", cursor: "pointer", position: "relative" }}>
-      <div style={{ position: "relative" }}>
+      <div style={{ position: "relative", minHeight: org.image ? undefined : (match ? 64 : (org.urgent || org.demo ? 36 : 0)) }}>
         <CoverArt org={org} height={104} />
         <div style={{ position: "absolute", top: 10, left: 10, display: "flex", gap: 6 }}>
           {org.urgent && <span style={{ fontSize: 10, fontWeight: 800, color: "#fff", letterSpacing: 1,
@@ -450,11 +412,11 @@ function DetailSheet({ org, match, following, onFollow, onClose, onGive }) {
     <div onClick={onClose} className="sc-scrim" style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,.6)", display: "flex", alignItems: "flex-end", zIndex: 30 }}>
       <div onClick={(e) => e.stopPropagation()} className="sc-sheet" style={{ background: C.paper, borderTopLeftRadius: 20, borderTopRightRadius: 20,
         width: "100%", maxHeight: "88%", overflowY: "auto", overflowX: "hidden" }}>
-        <div style={{ position: "relative" }}>
+        <div style={{ position: "relative", minHeight: org.image ? undefined : 64 }}>
           <CoverArt org={org} height={150} />
           <button onClick={onClose} style={{ position: "absolute", top: 12, right: 12, width: 32, height: 32, borderRadius: "50%",
             background: "rgba(0,0,0,.5)", border: "none", cursor: "pointer", display: "grid", placeItems: "center" }}><X size={18} color="#fff" /></button>
-          {match && <div style={{ position: "absolute", bottom: -24, right: 18, background: C.paper, borderRadius: "50%", padding: 4, boxShadow: "0 4px 12px rgba(0,0,0,.4)" }}><Meter value={match.score} size={54} /></div>}
+          {match && <div style={{ position: "absolute", bottom: org.image ? -24 : 0, right: 58, background: C.paper, borderRadius: "50%", padding: 4, boxShadow: "0 4px 12px rgba(0,0,0,.4)" }}><Meter value={match.score} size={54} /></div>}
         </div>
         <div style={{ padding: "18px 20px 22px" }}>
           <div style={{ fontFamily: "inherit", fontWeight: 700, fontSize: 23, color: C.cream }}>{org.name}</div>
@@ -472,7 +434,7 @@ function DetailSheet({ org, match, following, onFollow, onClose, onGive }) {
           )}
           <p style={{ fontSize: 14.5, lineHeight: 1.65, color: C.cream, margin: "16px 0" }}>{org.blurb}</p>
           {org.sourceUrl && <a href={org.sourceUrl} target="_blank" rel="noopener noreferrer" style={{color:C.pine,fontSize:14}}>Organization profile · {org.sourceName}</a>}
-          <p style={{fontSize:12,color:C.mute}}>Photo illustrates the cause. <a href={`${import.meta.env.BASE_URL}credits.html`} target="_blank" rel="noopener noreferrer" style={{color:"inherit"}}>Photo credits</a></p>
+
           <div style={{ display: "flex", gap: 10 }}>
             <button onClick={() => onFollow(org.id)} className="sc-tap" style={{ flex: 1, padding: 14, borderRadius: 11, fontWeight: 700, fontSize: 14, cursor: "pointer",
               border: "1.5px solid " + (following ? C.line2 : C.cream), background: following ? "transparent" : C.cream, color: following ? C.mute : C.bg }}>
@@ -802,6 +764,7 @@ function HomePage({ giver, follows, onFollow, onOpen }) {
       {/* hero match with cover art */}
       {top ? <div onClick={() => onOpen(top.o)} className="sc-tap" style={{ borderRadius: 18, overflow: "hidden", marginBottom: 22, cursor: "pointer", border: "1px solid " + C.line, position: "relative" }}>
         <CoverArt org={top.o} height={150} />
+        {!top.o.image && <div style={{height:68}} />}
         <div style={{ position: "absolute", top: 12, left: 14, fontSize: 11, letterSpacing: 2, color: "#fff", fontWeight: 700, textShadow: "0 1px 4px rgba(0,0,0,.5)" }}>{operatesInCountry(top.o,giver.countryCode) ? "YOUR COUNTRY MATCH" : "WORLDWIDE MATCH"}</div>
         <div style={{ position: "absolute", top: 10, right: 12, background: C.card, borderRadius: "50%", padding: 3, boxShadow: "0 2px 8px rgba(0,0,0,.4)" }}><Meter value={top.m.score} size={46} /></div>
         <div style={{ padding: 16, background: C.card }}>

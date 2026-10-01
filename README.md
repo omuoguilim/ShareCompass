@@ -2,46 +2,48 @@
 
 # ShareCompass
 
-A place to find causes you care about and people to volunteer with.
+I built ShareCompass around a question I kept coming back to: where can I actually help? I wanted one place to explore causes, keep track of organizations and find people interested in helping too.
 
-ShareCompass starts with a simple question: where can I actually help? Explore nonprofit organizations, narrow the list by your interests and follow their official sites to take the next step. Helping Pair adds a social side, so volunteering does not have to start alone.
+This repository contains my React web app. My original project was a Flutter app.
 
-This repository contains the React web version. The original project was a Flutter app.
+[Try ShareCompass](https://oluchi-muoguilim.superct3663.chatgpt.site/demos/sharecompass/)
 
-[Try ShareCompass](https://oluchi-muoguilim.superct3663.chatgpt.site/demos/sharecompass/) without creating an account. Search causes, follow organizations, edit preferences and try both themes. Changes stay in your browser; Reset clears them. Helping Pair connections require an account and are unavailable in this demo.
+## What’s in the app
 
-## Explore the app
+- Organization search with filters for cause, contribution type, reach and urgency.
+- Matching explanations based on the interests selected during onboarding.
+- Following lists with links to organization pages and an unfollow option.
+- Country preferences and U.S. city search.
+- Light/dark themes and profile privacy controls.
+- Helping Pair discovery, connection requests and an inbox for pending and accepted connections in account mode.
 
-- **Find a cause:** search 79 organizations and filter by cause, giving mode, reach and urgency.
-- **Understand your matches:** see why an organization fits your onboarding preferences.
-- **Keep your favorites:** follow organizations, open your Following list from Profile, and unfollow whenever you want.
-- **Find someone to help with:** opt into Helping Pair, discover public volunteer profiles and send or respond to connection requests. Manage pending invitations and accepted connections in the connection inbox.
-- **Choose your location:** search U.S. cities by state.
-- **Make it yours:** switch between light and dark appearance and manage your profile visibility.
+I keep the portfolio demo separate from account mode. Its preferences and follows stay in browser storage; Reset clears them. Helping Pair requires an account and is unavailable in the isolated demo.
 
-## A few things to try
+## The directory
 
-1. **Pick two different causes.** Explore interests such as education and the environment, then read the matching explanations.
-2. **Narrow your search.** Combine a cause with another filter and see which organizations remain.
-3. **Find one organization you would actually help.** Follow it, then visit its official website for current opportunities.
-4. **Try Helping Pair with two test accounts in your own Firebase project.** Make both discoverable, send a connection request and accept it from the other account.
-5. **Go private again.** Turn discovery off and check that your profile disappears from the other account's discovery view.
+The catalog contains 579 entries, including one sample community request. I added 500 distinct organizations from public GlobalGiving project listings on October 1, 2026, covering projects in 111 countries, including 49 organizations with listed projects in Nigeria. I kept the existing entries and IDs.
 
-## Helping Pair privacy
+I match countries using listed project locations rather than headquarters. Country results require confirmed country coverage; city results require explicit city coverage. Worldwide results put the selected country first. I only mark the added fundraising projects as supporting money contributions, rather than guessing whether they accept goods or volunteers.
 
-Helping Pair keeps private account details separate from discoverable profiles. Opting into discovery shares a smaller profile, not the entire account document. The recipient decides whether to accept a connection request.
+The catalog is a stored snapshot, not a live availability feed. I link to the official organization or project page for current details. My sources and selection method are in [directory-sources.json](directory-sources.json).
 
-## Donations and sample requests
+I only show an organization photo when I have an image for that organization or its initiative. Otherwise, I leave the photo out. The cause picker has separately credited photographs in [public/credits.html](public/credits.html).
 
-Donations and volunteering happen on organizations' official websites. ShareCompass does not process payments. The example community request lets you save a sample pledge, and the newsletter toggle stores a preference; neither sends money or starts an email subscription.
+## A few things I like to test
 
-## Built with
+I switch between two causes to compare the matching explanations, set a country to check the directory filters, and follow an organization before reopening the Following list and unfollowing it. For Helping Pair, I use two test accounts to check invitations, acceptance and discovery privacy.
 
-React 19, Vite 7, Firebase Authentication, Cloud Firestore and Lucide icons. Vitest covers selected organization, city-search and privacy behavior.
+## Pledges and privacy
+
+I don’t process donations in ShareCompass. Giving takes place on external organization websites. **Pledged** adds saved sample intentions in USD; it does not verify payments or track money donated elsewhere. The newsletter control saves a preference and does not start an email subscription.
+
+Accounts start private. I keep account details in owner-only `users/{uid}` documents. Opting into discovery creates a smaller `publicProfiles/{uid}` document with a display name, general location, causes and helping preferences, without email or phone details. Turning discovery off removes that profile.
+
+Connection records are limited to their participants. Only the recipient can accept or decline a pending invitation. I commit private preferences and discoverable profiles together and show an error when a write fails.
 
 ## Run locally
 
-Use Node.js 22.12 or newer and npm.
+I use Node.js 22.12 or newer.
 
 ```sh
 git clone https://github.com/omuoguilim/ShareCompass.git
@@ -51,11 +53,7 @@ cp .env.example .env
 npm run dev
 ```
 
-Fill the `VITE_FIREBASE_*` variables in `.env` with the client configuration for your own Firebase project. Enable email/password authentication, create a Firestore database and configure the appropriate authorized domains. Deploy the included `firestore.rules` before using account data.
-
-The source includes fallback Firebase client configuration. Client configuration is public; it does not replace database authorization. Use your own project for development instead of writing test accounts into someone else's database.
-
-## Checks and build
+I fill the `VITE_FIREBASE_*` variables with my development Firebase client configuration, enable email/password authentication, configure authorized domains and deploy `firestore.rules` before using account data. Client configuration alone does not authorize database access.
 
 ```sh
 npm test
@@ -64,50 +62,24 @@ npm run build
 npm run preview
 ```
 
-To build the isolated portfolio version:
+For the isolated demo:
 
 ```sh
 VITE_PORTFOLIO_DEMO=true npm run build -- --base=/demos/sharecompass/
 ```
 
-Account mode uses Firebase Authentication and Firestore. Private preferences and the smaller discoverable profile are committed together; failed writes show an error instead of claiming success. Account data is loaded from Firestore, and demo preferences stay in separate browser storage. Passwords are never saved in profile documents.
-
-The production frontend is generated in `dist/`. Firebase setup and rules deployment are separate from the frontend build.
-
-## Privacy model
-
-Accounts start private. Account documents under `users/{uid}` are owner-only. Opting into discovery creates a separate `publicProfiles/{uid}` document with display name, general location, causes and helping preferences. Email and phone details are not copied into that public document. Signed-in members can read discoverable profiles.
-
-Turning discovery off removes the public profile. Connection records are limited to their two participants, and only the recipient can accept or decline a pending request.
-
 ## Code map
 
-| File | Purpose |
+| File | Role |
 | --- | --- |
-| `App.jsx`, `AuthScreen.jsx` | Authentication and application entry |
-| `ShareCompass.jsx` | Onboarding, discovery and main screens |
-| `organizations.js` | Organization catalog and related helpers |
-| `usCities.js` | U.S. city data |
+| `App.jsx`, `AuthScreen.jsx` | Entry point and authentication |
+| `ShareCompass.jsx` | Onboarding and app screens |
+| `organizations.js`, `globalOrganizations.json` | Directory |
+| `discovery.js` | Location filtering and ranking |
 | `useProfile.js` | Account preferences |
-| `useCommunity.js` | Public profiles and connections |
-| `firestore.rules` | Database access rules |
+| `useCommunity.js` | Discovery and connections |
+| `firestore.rules` | Database permissions |
 
-## Current boundaries
+I use React 19, Vite 7, Firebase Authentication, Firestore, Lucide icons and Vitest. Automated tests cover selected directory, privacy, storage and following behavior. End-to-end Firebase testing remains part of my release work.
 
-The organization catalog is maintained in the repository, not a live feed of every organization's opportunities. Confirm availability on the official site. Location matches do not establish a person's identity or vet a volunteering arrangement.
-
-The compass mark in this README reuses the app's Lucide Compass icon. See [icon attribution](docs/brand/ATTRIBUTION.md).
-
-
-## Worldwide directory and photographs
-
-The October 1, 2026 expansion adds 500 distinct organizations with listed projects in 111 countries, including 49 with projects in Nigeria. Existing organizations and their IDs are retained. New entries come from GlobalGiving public project search results; each links to a project and organization profile. `directory-sources.json` records the snapshot, selection method and country counts.
-
-Country matching uses countries with listed projects, rather than an organization's headquarters. Your country comes first in worldwide results. The Country filter includes only confirmed country coverage; the City filter requires explicit city coverage. Find Help starts with your country and provides a Worldwide option. A listed project does not guarantee current service eligibility or an available volunteer place.
-
-The added projects list Money as a supported contribution because they have fundraising pages. Other contribution types are not inferred. Lists initially render 24 organizations and can load more. New string IDs work with the existing follow/unfollow persistence.
-
-Cause cards use real, credited photographs rather than website screenshots. Photos illustrate the cause and do not claim to show every listed organization. Creator, source and license details are available at `public/credits.html` and `public/causes/credits.json`.
-
-**Pledged** totals saved sample pledges in USD. It records intentions and does not confirm donations, process payments, or receive receipts from charity websites. Following an organization or opening a giving page does not increase this total.
-
+The compass mark uses the app’s Lucide Compass icon; [attribution](docs/brand/ATTRIBUTION.md) is included.
