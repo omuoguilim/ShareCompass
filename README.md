@@ -27,7 +27,7 @@ I match countries using listed project locations rather than headquarters. Count
 
 The catalog is a stored snapshot, not a live availability feed. I link to the official organization or project page for current details. My sources and selection method are in [directory-sources.json](directory-sources.json).
 
-I only show an organization photo when I have an image for that organization or its initiative. Otherwise, I leave the photo out. The cause picker has separately credited photographs in [public/credits.html](public/credits.html).
+I use photographs published by the organization or attached to its specific GlobalGiving project. Each detail page links to the photo source. Otherwise, I leave the photo out. The images remain on their publishers’ servers, and an unavailable image is hidden instead of replaced with a generic photo. The cause picker has separately credited photographs in [public/credits.html](public/credits.html).
 
 ## A few things I like to test
 

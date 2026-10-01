@@ -1,3 +1,4 @@
+import organizationPhotos from "./organizationPhotos.json";
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import {
   Home, Gift, Link2, HandHeart, User, Search, MapPin, Sparkles, Check,
@@ -166,8 +167,9 @@ const addBrandAssets = (org) => {
   return {
     ...org,
     website,
-    image: org.image || null,
-    imageAlt: org.imageAlt || "",
+    ...organizationPhotos[String(org.id)],
+    image: org.image || organizationPhotos[String(org.id)]?.image || null,
+    imageAlt: org.imageAlt || organizationPhotos[String(org.id)]?.imageAlt || "",
     logo: org.sourceName ? null : org.logo || `https://www.google.com/s2/favicons?domain_url=${encodeURIComponent(website)}&sz=128`,
   };
 };
@@ -433,6 +435,7 @@ function DetailSheet({ org, match, following, onFollow, onClose, onGive }) {
             </div>
           )}
           <p style={{ fontSize: 14.5, lineHeight: 1.65, color: C.cream, margin: "16px 0" }}>{org.blurb}</p>
+          {org.imageSource && <a href={org.imageSource} target="_blank" rel="noopener noreferrer" style={{display:"block",color:C.pine,fontSize:13,marginBottom:10}}>Photo: {org.imageCredit || org.name}</a>}
           {org.sourceUrl && <a href={org.sourceUrl} target="_blank" rel="noopener noreferrer" style={{color:C.pine,fontSize:14}}>Organization profile · {org.sourceName}</a>}
 
           <div style={{ display: "flex", gap: 10 }}>
