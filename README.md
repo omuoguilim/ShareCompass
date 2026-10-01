@@ -97,3 +97,17 @@ Turning discovery off removes the public profile. Connection records are limited
 The organization catalog is maintained in the repository, not a live feed of every organization's opportunities. Confirm availability on the official site. Location matches do not establish a person's identity or vet a volunteering arrangement.
 
 The compass mark in this README reuses the app's Lucide Compass icon. See [icon attribution](docs/brand/ATTRIBUTION.md).
+
+
+## Worldwide directory and photographs
+
+The October 1, 2026 expansion adds 500 distinct organizations with listed projects in 111 countries, including 49 with projects in Nigeria. Existing organizations and their IDs are retained. New entries come from GlobalGiving public project search results; each links to a project and organization profile. `directory-sources.json` records the snapshot, selection method and country counts.
+
+Country matching uses countries with listed projects, rather than an organization's headquarters. Your country comes first in worldwide results. The Country filter includes only confirmed country coverage; the City filter requires explicit city coverage. Find Help starts with your country and provides a Worldwide option. A listed project does not guarantee current service eligibility or an available volunteer place.
+
+The added projects list Money as a supported contribution because they have fundraising pages. Other contribution types are not inferred. Lists initially render 24 organizations and can load more. New string IDs work with the existing follow/unfollow persistence.
+
+Cause cards use real, credited photographs rather than website screenshots. Photos illustrate the cause and do not claim to show every listed organization. Creator, source and license details are available at `public/credits.html` and `public/causes/credits.json`.
+
+**Pledged** totals saved sample pledges in USD. It records intentions and does not confirm donations, process payments, or receive receipts from charity websites. Following an organization or opening a giving page does not increase this total.
+

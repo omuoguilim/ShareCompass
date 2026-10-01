@@ -74,3 +74,31 @@ it("editing preferences does not restore a removed follow",async()=>{
  await waitFor(()=>expect(JSON.parse(localStorage.getItem("sharecompass.portfolio.v1")).theme).toBe("dark"));
  expect(JSON.parse(localStorage.getItem("sharecompass.portfolio.v1")).follows).toEqual([]);
 });
+
+it('shows Nigerian projects first and expands the directory without losing controls',async()=>{
+ const ng={...giver,countryCode:'NG',city:'Lagos',region:'Lagos',region2:'national',causes:['Water'],gives:['Money']};
+ render(<ShareCompass profile={ng} saveProfile={vi.fn()} community={{people:[],connections:[]}} onSignOut={()=>{}}/>);
+ fireEvent.click(await screen.findByRole('button',{name:'Give'},{timeout:2500}));
+ expect(screen.getByText('49 organizations')).toBeTruthy();
+ expect(screen.queryByText('Feeding America')).toBeNull();
+ const before=screen.getAllByRole('article').length;
+ expect(before).toBe(24);
+ fireEvent.click(screen.getByRole('button',{name:'Show more organizations'}));
+ expect(screen.getAllByRole('article').length).toBe(48);
+ fireEvent.change(screen.getByRole('textbox',{name:'Search organizations, causes, or locations…'}),{target:{value:'HopeShield'}});
+ expect(screen.getByText('HopeShield Humanitarian Foundation')).toBeTruthy();
+ expect(screen.getAllByRole('article')).toHaveLength(1);
+ fireEvent.click(screen.getByRole('button',{name:'Clear search'}));
+ expect(screen.getAllByRole('article')).toHaveLength(24);
+});
+
+it('preserves and unfollows a new directory organization after reloading',async()=>{
+ const id='gg-105675';localStorage.setItem('sharecompass.portfolio.v1',JSON.stringify({...giver,countryCode:'NG',follows:[id]}));
+ const first=render(<PortfolioApp/>);
+ fireEvent.click(await screen.findByRole('button',{name:'Profile'},{timeout:2500}));
+ fireEvent.click(screen.getByRole('button',{name:'Unfollow GoGreen Environmental Health Sustainability Initiatives'}));
+ await waitFor(()=>expect(JSON.parse(localStorage.getItem('sharecompass.portfolio.v1')).follows).toEqual([]));
+ first.unmount();render(<PortfolioApp/>);
+ fireEvent.click(await screen.findByRole('button',{name:'Profile'},{timeout:2500}));
+ expect(screen.queryByRole('button',{name:'Unfollow GoGreen Environmental Health Sustainability Initiatives'})).toBeNull();
+});

@@ -7,6 +7,9 @@ import {
   Heart, ShieldCheck, ChevronDown, Sun, Moon, Users, UserPlus,
 } from "lucide-react";
 import { EXTRA_ORGS } from "./organizations.js";
+import GLOBAL_ORGS from "./globalOrganizations.json";
+import DIRECTORY_COUNTRIES from "./directoryCountries.json";
+import { discoverOrganizations, scoreMatch, operatesInCountry } from "./discovery.js";
 import { US_CITIES_BY_STATE, US_STATES } from "./usCities.js";
 const PORTFOLIO_DEMO = import.meta.env.VITE_PORTFOLIO_DEMO === "true";
 
@@ -37,14 +40,14 @@ const THEMES = {
 
 // Cause colors and fallback illustration gradients
 const CAUSE = {
-  Disaster:  { c: C.rust,  g: ["#7A2E1A", "#D2683C"], tag: "Emergency response", image: "https://image.thum.io/get/width/700/crop/420/noanimate/https://teamrubiconusa.org" },
-  Hunger:    { c: C.pine,  g: ["#274237", "#6BA88C"], tag: "Food and nutrition", image: "https://image.thum.io/get/width/700/crop/420/noanimate/https://feedingamerica.org" },
-  Housing:   { c: C.slate, g: ["#2A3E4C", "#6E92AC"], tag: "Housing support", image: "https://image.thum.io/get/width/700/crop/420/noanimate/https://habitat.org" },
-  Health:    { c: C.pine,  g: ["#26433A", "#5FA88E"], tag: "Medical care", image: "https://image.thum.io/get/width/700/crop/420/noanimate/https://directrelief.org" },
-  Water:     { c: C.slate, g: ["#233A44", "#5C8FA6"], tag: "Clean water", image: "https://image.thum.io/get/width/700/crop/420/noanimate/https://water.org" },
-  Children:  { c: C.rust,  g: ["#6E3320", "#E08A4B"], tag: "Children and families", image: "https://image.thum.io/get/width/700/crop/420/noanimate/https://savethechildren.org" },
-  Refugees:  { c: C.gold,  g: ["#6B4E1C", "#D9A441"], tag: "Refugee support", image: "https://image.thum.io/get/width/700/crop/420/noanimate/https://rescue.org" },
-  Education: { c: C.gold,  g: ["#5A4A22", "#D9A441"], tag: "Schools and learning", image: "https://image.thum.io/get/width/700/crop/420/noanimate/https://roomtoread.org" },
+  Disaster:  { c: C.rust,  g: ["#7A2E1A", "#D2683C"], tag: "Emergency response", image: `${import.meta.env.BASE_URL}causes/disaster.webp`, alt: "Residents unload emergency drinking water after Cyclone Sidr." },
+  Hunger:    { c: C.pine,  g: ["#274237", "#6BA88C"], tag: "Food and nutrition", image: `${import.meta.env.BASE_URL}causes/hunger.webp`, alt: "Volunteers distribute food at the Monterey County food bank." },
+  Housing:   { c: C.slate, g: ["#2A3E4C", "#6E92AC"], tag: "Housing support", image: `${import.meta.env.BASE_URL}causes/housing.webp`, alt: "Volunteers build a Habitat for Humanity home in San Antonio." },
+  Health:    { c: C.pine,  g: ["#26433A", "#5FA88E"], tag: "Medical care", image: `${import.meta.env.BASE_URL}causes/health.webp`, alt: "A doctor examines a patient at a mobile health clinic in Pakistan." },
+  Water:     { c: C.slate, g: ["#233A44", "#5C8FA6"], tag: "Clean water", image: `${import.meta.env.BASE_URL}causes/water.webp`, alt: "Children fill drinking-water bottles at Zaatari refugee camp." },
+  Children:  { c: C.rust,  g: ["#6E3320", "#E08A4B"], tag: "Children and families", image: `${import.meta.env.BASE_URL}causes/children.webp`, alt: "Children cheer at a supported play space after Typhoon Haiyan." },
+  Refugees:  { c: C.gold,  g: ["#6B4E1C", "#D9A441"], tag: "Refugee support", image: `${import.meta.env.BASE_URL}causes/refugees.webp`, alt: "An Iraqi Yazidi family at Newroz camp receiving humanitarian support." },
+  Education: { c: C.gold,  g: ["#5A4A22", "#D9A441"], tag: "Schools and learning", image: `${import.meta.env.BASE_URL}causes/education.webp`, alt: "Two students work on a maths question at a temporary school in Lebanon." },
 };
 const GEO = {
   US: { name: "United States", dial: "+1", regions: US_STATES, cities: [] },
@@ -109,7 +112,10 @@ const GEO = {
   JM: { name: "Jamaica", dial: "+1", regions: ["Kingston","St. Andrew","St. Catherine","Clarendon","Manchester"], cities: ["Kingston","Montego Bay","Spanish Town","Portmore","May Pen"] },
 };
 
-const COUNTRY_CODES = Object.keys(GEO);
+for (const [code, name] of Object.entries(DIRECTORY_COUNTRIES)) {
+  if (!GEO[code]) GEO[code] = { name, dial: "", regions: [], cities: [] };
+}
+const COUNTRY_CODES = Object.keys(GEO).sort((a,b)=>GEO[a].name.localeCompare(GEO[b].name));
 
 // ---------- Organization catalog. Missing images use a fallback illustration. ----------
 const CORE_ORGS = [
@@ -160,12 +166,19 @@ const addBrandAssets = (org) => {
   return {
     ...org,
     website,
-    image: org.image || `https://image.thum.io/get/width/1000/crop/600/noanimate/${website}`,
-    logo: org.logo || `https://www.google.com/s2/favicons?domain_url=${encodeURIComponent(website)}&sz=128`,
+    image: org.image || CAUSE[org.cause].image,
+    imageAlt: org.imageAlt || CAUSE[org.cause].alt,
+    logo: org.sourceName ? null : org.logo || `https://www.google.com/s2/favicons?domain_url=${encodeURIComponent(website)}&sz=128`,
   };
 };
 
-const ORGS = [...CORE_ORGS, ...EXTRA_ORGS].map(addBrandAssets);
+// Retain original IDs, follows, and entries. Only explicitly domestic locations
+// establish country coverage for legacy entries; "Global" is not a country list.
+const legacy = [...CORE_ORGS, ...EXTRA_ORGS].map(org => ({ ...org,
+  operatingCountries: /USA|United States|United Kingdom|India|Bangladesh/.test(org.loc) ? [org.country] : [],
+  operatingCities: [],
+}));
+export const ORGS = [...legacy, ...GLOBAL_ORGS].map(addBrandAssets);
 
 // ---------- Fallback cover illustrations ----------
 function hashStr(s) { let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0; return Math.abs(h); }
@@ -175,11 +188,12 @@ function CoverArt({ org, height = 120, radius = 0 }) {
   const [logoFailed, setLogoFailed] = useState(false);
   const imageUrl = org.image || "";
   const logoUrl = org.logo || "";
+  useEffect(()=>{setAssetFailed(false);setLogoFailed(false);},[imageUrl,logoUrl]);
 
   if (imageUrl && !assetFailed) {
     return <div style={{ height, borderRadius: radius, overflow: "hidden", position: "relative", background: CAUSE[org.cause].g[0] }}>
-      <img src={imageUrl} alt={`${org.name} official website`} onError={() => setAssetFailed(true)}
-        loading="lazy" referrerPolicy="no-referrer" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center top", display: "block" }} />
+      <img src={imageUrl} alt={org.imageAlt || CAUSE[org.cause].alt} onError={() => setAssetFailed(true)}
+        loading="lazy" referrerPolicy="no-referrer" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center", display: "block" }} />
       <div style={{ position: "absolute", inset: 0, background: "linear-gradient(90deg, rgba(16,13,11,.62), rgba(16,13,11,.08) 68%, rgba(16,13,11,.2))" }} />
       {logoUrl && !logoFailed && <div style={{ position: "absolute", left: 12, bottom: 10, width: 48, height: 48, borderRadius: 12, background: "rgba(255,255,255,.96)", padding: 7, boxShadow: "0 5px 18px rgba(0,0,0,.28)", display: "grid", placeItems: "center" }}>
         <img src={logoUrl} alt={`${org.name} logo`} onError={() => setLogoFailed(true)} loading="lazy"
@@ -242,22 +256,6 @@ function Crest({ org, size = 48, radius = 12 }) {
 }
 
 // ---------- Match engine (explainable) ----------
-function scoreMatch(g, o) {
-  const w = { cause: 38, type: 22, region: 20, urgency: 12, local: 8 };
-  const causes = g.causes || [], gives = g.gives || [], range = g.region2 || "global";
-  let s = 0; const why = [];
-  if (causes.includes(o.cause)) { s += w.cause; why.push("Shares your cause"); }
-  else if (causes.length === 0) s += w.cause * 0.5;
-  if (o.types.some((t) => gives.includes(t))) { s += w.type; why.push("Accepts what you give"); }
-  if (range === "global" || range === o.region) { s += w.region; why.push("In your range"); }
-  else s += w.region * 0.4;
-  if (g.country && o.country === g.country) { s += w.local; why.push("Active in your country"); }
-  s += o.urgent ? w.urgency : w.urgency * 0.6;
-  if (o.urgent) why.push("Time-sensitive");
-  s += (o.need / 100) * 5;
-  return { score: Math.min(100, Math.round(s)), why: why.slice(0, 3) };
-}
-
 // ---------- Motion ----------
 function MotionStyles() {
   return (<style>{`
@@ -461,7 +459,7 @@ function DetailSheet({ org, match, following, onFollow, onClose, onGive }) {
         <div style={{ padding: "18px 20px 22px" }}>
           <div style={{ fontFamily: "inherit", fontWeight: 700, fontSize: 23, color: C.cream }}>{org.name}</div>
           <div style={{ fontSize: 13, color: C.mute, display: "flex", alignItems: "center", gap: 5, marginTop: 3 }}><MapPin size={12} /> {org.loc} · {org.handle}</div>
-          {org.real && <div style={{ fontSize: 12, color: C.pine, display: "flex", alignItems: "center", gap: 6, marginTop: 10 }}><ShieldCheck size={14} /> Official website listed</div>}
+          {org.real && <div style={{ fontSize: 12, color: C.pine, display: "flex", alignItems: "center", gap: 6, marginTop: 10 }}><ShieldCheck size={14} /> {org.sourceName ? "Project listed on GlobalGiving" : "Official website listed"}</div>}
           {org.demo && <div style={{ fontSize: 12, color: C.mute, background: C.paper2, borderRadius: 8, padding: "8px 11px", marginTop: 10 }}>Sample request. No money is collected.</div>}
           {match && (
             <div style={{ border: "1px solid " + C.line, borderRadius: 12, padding: 14, margin: "16px 0", background: C.paper2 }}>
@@ -473,6 +471,8 @@ function DetailSheet({ org, match, following, onFollow, onClose, onGive }) {
             </div>
           )}
           <p style={{ fontSize: 14.5, lineHeight: 1.65, color: C.cream, margin: "16px 0" }}>{org.blurb}</p>
+          {org.sourceUrl && <a href={org.sourceUrl} target="_blank" rel="noopener noreferrer" style={{color:C.pine,fontSize:14}}>Organization profile · {org.sourceName}</a>}
+          <p style={{fontSize:12,color:C.mute}}>Photo illustrates the cause. <a href={`${import.meta.env.BASE_URL}credits.html`} target="_blank" rel="noopener noreferrer" style={{color:"inherit"}}>Photo credits</a></p>
           <div style={{ display: "flex", gap: 10 }}>
             <button onClick={() => onFollow(org.id)} className="sc-tap" style={{ flex: 1, padding: 14, borderRadius: 11, fontWeight: 700, fontSize: 14, cursor: "pointer",
               border: "1.5px solid " + (following ? C.line2 : C.cream), background: following ? "transparent" : C.cream, color: following ? C.mute : C.bg }}>
@@ -757,6 +757,7 @@ function Onboarding({ onComplete, initial }) {
               <div style={{ fontSize: 11, color: C.mute, marginTop: 2 }}>{CAUSE[k].tag}</div></div>
           </button>); })}
       </div>
+      <a href={`${import.meta.env.BASE_URL}credits.html`} target="_blank" rel="noopener noreferrer" style={{display:"block",marginTop:14,fontSize:12,color:C.mute}}>Photo credits</a>
     </StepScaffold>
   );
 
@@ -790,18 +791,18 @@ function Onboarding({ onComplete, initial }) {
 //  APP PAGES
 // =======================================================================
 function HomePage({ giver, follows, onFollow, onOpen }) {
-  const ranked = useMemo(() => ORGS.map((o) => ({ o, m: scoreMatch(giver, o) })).sort((a, b) => b.m.score - a.m.score), [giver]);
+  const ranked = useMemo(() => discoverOrganizations(ORGS,giver), [giver]);
   const top = ranked[0];
   return (
     <div style={{ padding: "4px 16px 16px" }}>
       <div style={{ borderBottom: "2px solid " + C.line2, paddingBottom: 8, marginBottom: 4 }}>
         <div style={{ fontSize: 11, letterSpacing: 3, color: C.faint }}>THE GIVING FIELD GUIDE</div></div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", fontSize: 11, color: C.faint, marginBottom: 16 }}>
-        <span>{giver.city || giver.region || "Worldwide"} · 2026</span><span>{ORGS.filter((o) => o.urgent).length} urgent today</span></div>
+        <span>{GEO[giver.countryCode]?.name || "Worldwide"} · {ORGS.filter(o=>operatesInCountry(o,giver.countryCode)).length} organizations with listed projects</span></div>
       {/* hero match with cover art */}
-      <div onClick={() => onOpen(top.o)} className="sc-tap" style={{ borderRadius: 18, overflow: "hidden", marginBottom: 22, cursor: "pointer", border: "1px solid " + C.line, position: "relative" }}>
+      {top ? <div onClick={() => onOpen(top.o)} className="sc-tap" style={{ borderRadius: 18, overflow: "hidden", marginBottom: 22, cursor: "pointer", border: "1px solid " + C.line, position: "relative" }}>
         <CoverArt org={top.o} height={150} />
-        <div style={{ position: "absolute", top: 12, left: 14, fontSize: 11, letterSpacing: 2, color: "#fff", fontWeight: 700, textShadow: "0 1px 4px rgba(0,0,0,.5)" }}>YOUR STRONGEST MATCH</div>
+        <div style={{ position: "absolute", top: 12, left: 14, fontSize: 11, letterSpacing: 2, color: "#fff", fontWeight: 700, textShadow: "0 1px 4px rgba(0,0,0,.5)" }}>{operatesInCountry(top.o,giver.countryCode) ? "YOUR COUNTRY MATCH" : "WORLDWIDE MATCH"}</div>
         <div style={{ position: "absolute", top: 10, right: 12, background: C.card, borderRadius: "50%", padding: 3, boxShadow: "0 2px 8px rgba(0,0,0,.4)" }}><Meter value={top.m.score} size={46} /></div>
         <div style={{ padding: 16, background: C.card }}>
           <div style={{ fontFamily: "inherit", fontWeight: 700, fontSize: 20, color: C.cream }}>{top.o.name}</div>
@@ -809,6 +810,7 @@ function HomePage({ giver, follows, onFollow, onOpen }) {
           <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>{top.m.why.map((r) => <span key={r} style={{ fontSize: 11.5, color: C.pine, display: "inline-flex", alignItems: "center", gap: 4 }}><Check size={12} /> {r}</span>)}</div>
         </div>
       </div>
+      : <EmptySearch label="No organizations have a confirmed location in that range. Try Country or Worldwide on Connect." />}
       <div style={{ padding: "4px 0 18px", marginBottom: 18, borderBottom: "1px solid " + C.line }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
           <CalendarClock size={18} color={C.slate} />
@@ -824,45 +826,47 @@ function HomePage({ giver, follows, onFollow, onOpen }) {
 
 function GivePage({ giver, follows, onFollow, onOpen }) {
   const [query, setQuery] = useState("");
-  const urgent = useMemo(() => {
-    const term = query.trim().toLowerCase();
-    return ORGS.filter((o) => o.urgent && (!term || `${o.name} ${o.cause} ${o.loc} ${o.blurb}`.toLowerCase().includes(term)))
-      .map((o) => ({ o, m: scoreMatch(giver, o) })).sort((a, b) => b.m.score - a.m.score);
-  }, [giver, query]);
+  const urgent = useMemo(() => discoverOrganizations(ORGS,giver,{query}), [giver, query]);
+  const [limit,setLimit]=useState(24);
+  useEffect(()=>setLimit(24),[giver,query]);
   return (
     <div style={{ padding: "4px 16px 16px" }}>
       <SectionRule>Give to an organization</SectionRule>
       <p style={{ fontSize: 13.5, color: C.mute, lineHeight: 1.55, margin: "-4px 0 16px" }}>Find a nonprofit to support with money, time, supplies, or sponsorship.</p>
       <SearchBox value={query} onChange={setQuery} placeholder="Search organizations, causes, or locations…" />
-      <div style={{ fontSize: 12, color: C.faint, margin: "-7px 2px 13px" }}>{urgent.length} urgent organization{urgent.length === 1 ? "" : "s"}</div>
+      <div style={{ fontSize: 12, color: C.faint, margin: "-7px 2px 13px" }}>{urgent.length} organization{urgent.length === 1 ? "" : "s"}</div>
       <div className="sc-stagger" style={{ display: "grid", gap: 14 }}>
-        {urgent.map(({ o, m }) => <OrgCard key={o.id} org={o} match={m} following={follows.has(o.id)} onFollow={onFollow} onOpen={() => onOpen(o)} primaryLabel="Support" />)}
-        {!urgent.length && <EmptySearch label="No urgent organizations match that search." />}</div>
+        {urgent.slice(0,limit).map(({ o, m }) => <OrgCard key={o.id} org={o} match={m} following={follows.has(o.id)} onFollow={onFollow} onOpen={() => onOpen(o)} primaryLabel="Support" />)}
+        {!urgent.length && <EmptySearch label="No organizations match your location and search." />}</div>
+      {limit<urgent.length && <BigButton onClick={()=>setLimit(n=>n+24)}>Show more organizations</BigButton>}
     </div>
   );
 }
 
-function FindHelpPage({ follows, onFollow, onOpen }) {
+function FindHelpPage({ giver, follows, onFollow, onOpen }) {
   const [query, setQuery] = useState("");
   const [need, setNeed] = useState("All");
   const needs = ["All", "Housing", "Hunger", "Health", "Water"];
+  const [worldwide,setWorldwide]=useState(false),[limit,setLimit]=useState(24);
+  useEffect(()=>setLimit(24),[need,query,worldwide,giver.countryCode]);
   const help = useMemo(() => {
-    const term = query.trim().toLowerCase();
-    return ORGS.filter((o) => ["Housing", "Hunger", "Health", "Water"].includes(o.cause) && !o.demo)
-      .filter((o) => need === "All" || o.cause === need)
-      .filter((o) => !term || `${o.name} ${o.cause} ${o.loc} ${o.blurb}`.toLowerCase().includes(term));
-  }, [need, query]);
+    return discoverOrganizations(ORGS,giver,{query,range:worldwide ? "global" : "national",urgentOnly:false}).map(({o})=>o)
+      .filter(o=>["Housing","Hunger","Health","Water"].includes(o.cause) && !o.demo)
+      .filter(o=>need==="All" || o.cause===need);
+  }, [need, query, worldwide,giver]);
   return (
     <div style={{ padding: "4px 16px 16px" }}>
       <SectionRule>Find services for yourself</SectionRule>
-      <p style={{ fontSize: 13.5, color: C.mute, margin: "-4px 0 14px", lineHeight: 1.55 }}>Looking for support? Search for food, housing, clean water, and medical services near you.</p>
+      <p style={{ fontSize: 13.5, color: C.mute, margin: "-4px 0 14px", lineHeight: 1.55 }}>Find organizations with projects in your country. Check their project page for current services and eligibility.</p>
       <SearchBox value={query} onChange={setQuery} placeholder="Search help by organization or location…" />
+      <FilterRow label="Location"><Chip active={!worldwide} onClick={()=>setWorldwide(false)}>{GEO[giver.countryCode]?.name || "Your country"}</Chip><Chip active={worldwide} onClick={()=>setWorldwide(true)}>Worldwide</Chip></FilterRow>
       <FilterRow label="What do you need?">{needs.map((item) => <Chip key={item} active={need === item} onClick={() => setNeed(item)}>{item === "Hunger" ? "Food" : item === "Health" ? "Medical" : item}</Chip>)}</FilterRow>
-      <div style={{ fontSize: 12, color: C.faint, margin: "4px 2px 13px" }}>{help.length} service provider{help.length === 1 ? "" : "s"}</div>
+      <div style={{ fontSize: 12, color: C.faint, margin: "4px 2px 13px" }}>{help.length} organization{help.length === 1 ? "" : "s"}</div>
       <div className="sc-stagger" style={{ display: "grid", gap: 14 }}>
-        {help.map((o) => <OrgCard key={o.id} org={o} following={follows.has(o.id)} onFollow={onFollow} onOpen={() => onOpen(o)} primaryLabel="View services" />)}
-        {!help.length && <EmptySearch label="No service providers match those filters." />}
+        {help.slice(0,limit).map((o) => <OrgCard key={o.id} org={o} following={follows.has(o.id)} onFollow={onFollow} onOpen={() => onOpen(o)} primaryLabel="View services" />)}
+        {!help.length && <EmptySearch label="No organizations have listed projects in this country for those filters." />}
       </div>
+      {limit<help.length && <BigButton onClick={()=>setLimit(n=>n+24)}>Show more organizations</BigButton>}
     </div>
   );
 }
@@ -883,11 +887,12 @@ function EmptySearch({ label }) {
 
 function ConnectPage({ giver, setGiver, follows, onFollow, onOpen }) {
   const [q, setQ] = useState("");
+  const [limit,setLimit]=useState(24);
+  useEffect(()=>setLimit(24),[q,giver]);
   const causes = Object.keys(CAUSE), types = ["Money", "Time", "Goods", "Sponsor"];
   const toggle = (k, v) => setGiver((g) => ({ ...g, [k]: g[k].includes(v) ? g[k].filter((x) => x !== v) : [...g[k], v] }));
   const results = useMemo(() => {
-    const t = q.trim().toLowerCase();
-    return ORGS.map((o) => ({ o, m: scoreMatch(giver, o) })).filter(({ o }) => (!giver.urgentOnly || o.urgent) && (!t || (o.name + o.blurb + o.cause + o.loc).toLowerCase().includes(t))).sort((a, b) => b.m.score - a.m.score);
+    return discoverOrganizations(ORGS,giver,{query:q});
   }, [q, giver]);
   return (
     <div style={{ padding: "4px 16px 16px" }}>
@@ -898,12 +903,13 @@ function ConnectPage({ giver, setGiver, follows, onFollow, onOpen }) {
       <FilterRow label="Cause">{causes.map((c) => <Chip key={c} active={giver.causes.includes(c)} color={CAUSE[c].c} onClick={() => toggle("causes", c)}>{c}</Chip>)}</FilterRow>
       <FilterRow label="How you give">{types.map((t) => <Chip key={t} active={giver.gives.includes(t)} onClick={() => toggle("gives", t)}>{t}</Chip>)}</FilterRow>
       <FilterRow label="Range">
-        {["local", "national", "global"].map((r) => <Chip key={r} active={giver.region2 === r} onClick={() => setGiver((g) => ({ ...g, region2: r }))}>{r[0].toUpperCase() + r.slice(1)}</Chip>)}
+        {["local", "national", "global"].map((r) => <Chip key={r} active={giver.region2 === r} onClick={() => setGiver((g) => ({ ...g, region2: r }))}>{r === "local" ? "City" : r === "national" ? (GEO[giver.countryCode]?.name || "Country") : "Worldwide"}</Chip>)}
         <Chip active={giver.urgentOnly} color={C.rust} onClick={() => setGiver((g) => ({ ...g, urgentOnly: !g.urgentOnly }))}>Urgent only</Chip></FilterRow>
       <div style={{ fontSize: 12.5, color: C.mute, margin: "16px 0 12px", borderTop: "1px solid " + C.line, paddingTop: 12 }}>{results.length} match{results.length !== 1 ? "es" : ""}, best first</div>
       <div className="sc-stagger" style={{ display: "grid", gap: 14 }}>
-        {results.map(({ o, m }) => <OrgCard key={o.id} org={o} match={m} following={follows.has(o.id)} onFollow={onFollow} onOpen={() => onOpen(o)} />)}
-        {!results.length && <div style={{ textAlign: "center", padding: "40px 20px", color: C.mute }}><Compass size={28} style={{ opacity: .4 }} /><p style={{ fontSize: 14, marginTop: 10 }}>Nothing fits those filters yet. Loosen one to explore more.</p></div>}</div>
+        {results.slice(0,limit).map(({ o, m }) => <OrgCard key={o.id} org={o} match={m} following={follows.has(o.id)} onFollow={onFollow} onOpen={() => onOpen(o)} />)}
+        {!results.length && <div style={{ textAlign: "center", padding: "40px 20px", color: C.mute }}><Compass size={28} style={{ opacity: .4 }} /><p style={{ fontSize: 14, marginTop: 10 }}>No confirmed project locations match. Choose Country or Worldwide to explore more.</p></div>}</div>
+      {limit<results.length && <BigButton onClick={()=>setLimit(n=>n+24)}>Show more organizations</BigButton>}
     </div>
   );
 }
@@ -998,7 +1004,7 @@ export function ProfilePage({ giver, follows, gifts, onFollow, onOpen, onEditPro
         {!followed.length && <div style={{ fontSize: 13.5, color: C.mute }}>No organizations followed yet. Browse causes and tap Follow to save one here.</div>}
         {followed.map((o) => <div key={o.id} style={{ display: "flex", gap: 11, alignItems: "center", background: C.paper2, border: "1px solid " + C.line, borderRadius: 12, padding: 11 }}>
           <button aria-label={`Open ${o.name}`} onClick={()=>onOpen(o)} style={{display:"flex",alignItems:"center",gap:11,flex:1,minWidth:0,border:0,background:"transparent",textAlign:"left",cursor:"pointer",color:C.cream}}><Crest org={o} size={40} radius={11}/><span style={{fontWeight:700,fontSize:13,overflowWrap:"anywhere"}}>{o.name}</span></button><button aria-label={`Unfollow ${o.name}`} onClick={()=>onFollow(o.id)} style={{border:"1px solid "+C.line2,borderRadius:8,padding:"8px 10px",background:C.card,color:C.mute,cursor:"pointer",fontSize:12}}>Unfollow</button></div>)}</div>
-      <div ref={pledgesRef} style={{marginTop:22,scrollMarginTop:14}}><SectionRule>Saved pledges</SectionRule><p style={{fontSize:12,color:C.mute}}>Sample pledges only. No money is collected.</p>{!gifts.length ? <p style={{fontSize:13,color:C.mute}}>No pledges saved.</p> : gifts.map((gift,i)=><div key={`${gift.id}-${i}`} style={{padding:12,borderBottom:"1px solid "+C.line,color:C.cream,fontSize:13}}>{ORGS.find(o=>o.id===gift.id)?.name || "Sample request"} · ${gift.amt} · {gift.freq}</div>)}</div>
+      <div ref={pledgesRef} style={{marginTop:22,scrollMarginTop:14}}><SectionRule>Saved pledges</SectionRule><p style={{fontSize:12,color:C.mute}}>Pledges record intentions, not confirmed donations. These sample amounts are in USD; ShareCompass does not collect money or track payments made on charity websites.</p>{!gifts.length ? <p style={{fontSize:13,color:C.mute}}>No pledges saved.</p> : gifts.map((gift,i)=><div key={`${gift.id}-${i}`} style={{padding:12,borderBottom:"1px solid "+C.line,color:C.cream,fontSize:13}}>{ORGS.find(o=>o.id===gift.id)?.name || "Sample request"} · ${gift.amt} · {gift.freq}</div>)}</div>
     </div>
   );
 }
@@ -1041,6 +1047,7 @@ function SettingsScreen({ giver, setGiver, onClose, onEditProfile, onSignOut, on
           <button onClick={() => { setGiver((g) => ({ ...g, newsletter: !g.newsletter })); onToast("Newsletter preference saved; no subscription started"); }} style={{ width: 46, height: 27, borderRadius: 14, background: giver.newsletter ? C.pine : C.line2, position: "relative", border: "none", cursor: "pointer" }}>
             <div style={{ position: "absolute", top: 3, left: giver.newsletter ? 22 : 3, width: 21, height: 21, borderRadius: "50%", background: "#fff", transition: "left .2s" }} /></button></div>
         <div style={{ padding: 16 }}>
+          <p style={{fontSize:12,color:C.mute}}>Directory snapshot · 1 October 2026. <a href={`${import.meta.env.BASE_URL}credits.html`} target="_blank" rel="noopener noreferrer" style={{color:"inherit"}}>Sources & photo credits</a></p>
           <button onClick={onSignOut} className="sc-tap" style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: 14, borderRadius: 11, border: "1.5px solid " + C.rust, background: "transparent", color: C.ember, fontWeight: 700, fontSize: 14, cursor: "pointer" }}>
             <LogOut size={17} /> {PORTFOLIO_DEMO ? "Reset demo" : "Sign out"}</button></div>
       </div>
@@ -1142,7 +1149,7 @@ export default function ShareCompass({ userId, profile, saveProfile, community, 
         {tab === "home" && <HomePage giver={giver} follows={follows} onFollow={onFollow} onOpen={setDetail} />}
         {tab === "give" && <GivePage giver={giver} follows={follows} onFollow={onFollow} onOpen={setDetail} />}
         {tab === "connect" && <ConnectHub giver={giver} setGiver={setGiver} follows={follows} onFollow={onFollow} onOpen={setDetail} community={community} userId={userId} onToast={fireToast} />}
-        {tab === "help" && <FindHelpPage follows={follows} onFollow={onFollow} onOpen={setDetail} />}
+        {tab === "help" && <FindHelpPage giver={giver} follows={follows} onFollow={onFollow} onOpen={setDetail} />}
         {tab === "profile" && <ProfilePage giver={giver} follows={follows} gifts={gifts} onFollow={onFollow} onOpen={setDetail} onEditProfile={() => setPhase("editProfile")} onOpenSettings={() => setShowSettings(true)} />}
       </div>
     </div>
