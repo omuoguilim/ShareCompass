@@ -8,6 +8,8 @@ ShareCompass starts with a simple question: where can I actually help? Explore n
 
 This repository contains the React web version. The original project was a Flutter app.
 
+[Try ShareCompass](https://oluchi-muoguilim.superct3663.chatgpt.site/demos/sharecompass/) without creating an account. Search causes, follow organizations, edit preferences and try both themes. Changes stay in your browser; Reset clears them. Helping Pair connections require an account and are unavailable in this demo.
+
 ## Explore the app
 
 - **Find a cause:** search 79 organizations and filter by cause, giving mode, reach and urgency.
@@ -60,6 +62,12 @@ npm test
 npm run lint
 npm run build
 npm run preview
+```
+
+To build the isolated portfolio version:
+
+```sh
+VITE_PORTFOLIO_DEMO=true npm run build -- --base=/demos/sharecompass/
 ```
 
 The production frontend is generated in `dist/`. Firebase setup and rules deployment are separate from the frontend build.
