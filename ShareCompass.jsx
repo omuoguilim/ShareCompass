@@ -1101,7 +1101,7 @@ export default function ShareCompass({ userId, profile, saveProfile, community, 
     <div style={{ padding: "16px 18px 12px", background: C.paper2, color: C.cream, display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid " + C.line }}>
       <div style={{ display: "flex", alignItems: "center", gap: 9 }}><Compass size={20} color={C.ember} /><span style={{ fontFamily: "inherit", fontWeight: 700, fontSize: 18 }}>ShareCompass</span></div>
       <span style={{ fontSize: 10, color: C.mute, border: "1px solid " + C.line2, padding: "2px 7px", borderRadius: 4, letterSpacing: 1 }}>V2.2</span></div>
-    <div ref={pageScrollRef} style={{ flex: 1, overflowY: "auto", scrollPaddingTop: 14 }}>
+    <div ref={pageScrollRef} style={{ flex: 1, minHeight: 0, overflowY: "auto", scrollPaddingTop: 14 }}>
       <div key={tab} className="sc-page" style={{ minHeight: "100%" }}>
         {tab === "home" && <HomePage giver={giver} follows={follows} onFollow={onFollow} onOpen={setDetail} />}
         {tab === "give" && <GivePage giver={giver} follows={follows} onFollow={onFollow} onOpen={setDetail} />}
@@ -1110,10 +1110,10 @@ export default function ShareCompass({ userId, profile, saveProfile, community, 
         {tab === "profile" && <ProfilePage giver={giver} follows={follows} gifts={gifts} onEditProfile={() => setPhase("editProfile")} onOpenSettings={() => setShowSettings(true)} />}
       </div>
     </div>
-    <div style={{ display: "flex", borderTop: "1px solid " + C.line, background: C.paper2 }}>
+    <div style={{ display: "flex", flexShrink: 0, position: "relative", zIndex: 2, paddingTop: 6, borderTop: "1px solid " + C.line, background: C.paper2 }}>
       {NAV.map((n) => { const active = tab === n.id, center = n.id === "connect", I = n.icon; return (
         <button key={n.id} onClick={() => setTab(n.id)} style={{ flex: 1, background: "none", border: "none", cursor: "pointer", padding: "9px 0 7px", display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <div style={{ width: center ? 44 : "auto", height: center ? 44 : "auto", marginTop: center ? -22 : 0, borderRadius: center ? "50%" : 0, background: center ? `linear-gradient(135deg, ${C.rust}, ${C.ember})` : "transparent", display: "grid", placeItems: "center", boxShadow: center ? `0 6px 16px ${C.rust}66` : "none", border: center ? "3px solid " + C.paper2 : "none" }}>
+          <div style={{ width: 44, height: 44, marginTop: 0, borderRadius: center ? "50%" : 0, background: center ? `linear-gradient(135deg, ${C.rust}, ${C.ember})` : "transparent", display: "grid", placeItems: "center", boxShadow: center ? `0 6px 16px ${C.rust}66` : "none", border: center ? "3px solid " + C.paper2 : "none" }}>
             <I size={center ? 22 : 20} color={center ? "#fff" : active ? C.ember : C.faint} /></div>
           <span style={{ fontSize: 10, fontWeight: 600, color: active ? C.ember : C.faint }}>{n.label}</span></button>); })}
     </div>
