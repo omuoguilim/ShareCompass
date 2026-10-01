@@ -14,8 +14,8 @@ This repository contains the React web version. The original project was a Flutt
 
 - **Find a cause:** search 79 organizations and filter by cause, giving mode, reach and urgency.
 - **Understand your matches:** see why an organization fits your onboarding preferences.
-- **Keep your favorites:** follow organizations and save your preferences.
-- **Find someone to help with:** opt into Helping Pair, discover public volunteer profiles and send or respond to connection requests.
+- **Keep your favorites:** follow organizations, open your Following list from Profile, and unfollow whenever you want.
+- **Find someone to help with:** opt into Helping Pair, discover public volunteer profiles and send or respond to connection requests. Manage pending invitations and accepted connections in the connection inbox.
 - **Choose your location:** search U.S. cities by state.
 - **Make it yours:** switch between light and dark appearance and manage your profile visibility.
 
@@ -69,6 +69,8 @@ To build the isolated portfolio version:
 ```sh
 VITE_PORTFOLIO_DEMO=true npm run build -- --base=/demos/sharecompass/
 ```
+
+Account mode uses Firebase Authentication and Firestore. Private preferences and the smaller discoverable profile are committed together; failed writes show an error instead of claiming success. Account data is loaded from Firestore, and demo preferences stay in separate browser storage. Passwords are never saved in profile documents.
 
 The production frontend is generated in `dist/`. Firebase setup and rules deployment are separate from the frontend build.
 

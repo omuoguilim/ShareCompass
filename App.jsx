@@ -6,7 +6,7 @@ import ShareCompass from "./ShareCompass.jsx";
 import { useCommunity } from "./useCommunity.js";
 
 export default function App() {
-  const { user, profile, loading, saveProfile } = useProfile();
+  const { user, profile, loading, error, retryProfile, saveProfile } = useProfile();
   const community = useCommunity(user && user !== undefined ? user : null, profile);
 
   if (user === undefined || (user && loading)) {
@@ -19,6 +19,8 @@ export default function App() {
   }
 
   if (!user) return <AuthScreen />;
+  if(error)return <main style={{minHeight:"100vh",background:"#191512",color:"#EFE7DA",display:"grid",placeItems:"center",padding:24}}><div role="alert"><p>{error}</p><button onClick={retryProfile}>Retry</button><button onClick={()=>signOut(auth)}>Sign out</button></div></main>;
 
   return <ShareCompass userId={user.uid} profile={profile} saveProfile={saveProfile} community={community} onSignOut={() => signOut(auth)} />;
 }
+

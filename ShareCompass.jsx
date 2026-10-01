@@ -494,6 +494,8 @@ function GiveFlow({ org, onClose, onDone }) {
   const [amount, setAmount] = useState(50);
   const [custom, setCustom] = useState("");
   const [freq, setFreq] = useState("once");
+  const [saving,setSaving]=useState(false);
+  const [saveError,setSaveError]=useState("");
   const presets = [25, 50, 100, 250];
   const amt = custom ? Math.max(0, parseInt(custom.replace(/\D/g, "") || "0", 10)) : amount;
 
@@ -568,8 +570,9 @@ function GiveFlow({ org, onClose, onDone }) {
           </div>
         </div>
         <div style={{ padding: 20, borderTop: "1px solid " + C.line }}>
-          <button onClick={() => setStage(4)} className="sc-tap" style={{ width: "100%", padding: 15, borderRadius: 12, fontWeight: 700, fontSize: 15, border: "none", background: m.c, color: "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
-            <Check size={16} /> Save ${amt}{freq !== "once" ? "/" + (freq === "monthly" ? "mo" : "yr") : ""} pledge</button>
+          <button disabled={saving} onClick={async () => {setSaving(true);setSaveError("");try{await onDone(amt,freq,org);}catch{setSaveError("Could not save this pledge. Please try again.");}finally{setSaving(false);}}} className="sc-tap" style={{ width: "100%", padding: 15, borderRadius: 12, fontWeight: 700, fontSize: 15, border: "none", background: m.c, color: "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+            {saving ? "Saving…" : <><Check size={16} /> Save ${amt}{freq !== "once" ? "/" + (freq === "monthly" ? "mo" : "yr") : ""} pledge</>}</button>
+          {saveError && <p role="alert" style={{color:C.rust,fontSize:13}}>{saveError}</p>}
         </div>
       </>}
 
@@ -771,11 +774,11 @@ function Onboarding({ onComplete, initial }) {
   );
 
   if (step === 9) return (
-    <StepScaffold step={5} total={TOTAL} onBack={back} title="Stay in the loop?" sub="Get a monthly note on urgent causes and new local events. No spam, unsubscribe anytime."
+    <StepScaffold step={5} total={TOTAL} onBack={back} title="Email preferences" sub="Save your interest in a monthly newsletter. Email delivery is not available yet."
       footer={<BigButton onClick={() => onComplete(d)}>Finish setup <PartyPopper size={17} /></BigButton>}>
       <button onClick={() => set("newsletter", !d.newsletter)} className="sc-tap" style={{ width: "100%", display: "flex", alignItems: "center", gap: 14, padding: 16, borderRadius: 14, cursor: "pointer", textAlign: "left", border: "1.5px solid " + (d.newsletter ? C.cream : C.line2), background: d.newsletter ? C.paper2 : C.paper }}>
         <div style={{ width: 46, height: 46, borderRadius: 12, background: d.newsletter ? C.cream : C.line2, display: "grid", placeItems: "center" }}><Bell size={22} color={d.newsletter ? C.bg : C.mute} /></div>
-        <div style={{ flex: 1 }}><div style={{ fontFamily: "inherit", fontWeight: 700, fontSize: 16, color: C.cream }}>Monthly newsletter</div><div style={{ fontSize: 12.5, color: C.mute }}>{d.newsletter ? "You're subscribed" : "Not subscribed"}</div></div>
+        <div style={{ flex: 1 }}><div style={{ fontFamily: "inherit", fontWeight: 700, fontSize: 16, color: C.cream }}>Monthly newsletter</div><div style={{ fontSize: 12.5, color: C.mute }}>{d.newsletter ? "Preference selected" : "Not selected"}</div></div>
         <div style={{ width: 46, height: 27, borderRadius: 14, background: d.newsletter ? C.pine : C.line2, position: "relative", flexShrink: 0 }}><div style={{ position: "absolute", top: 3, left: d.newsletter ? 22 : 3, width: 21, height: 21, borderRadius: "50%", background: "#fff", transition: "left .2s" }} /></div>
       </button>
     </StepScaffold>
@@ -907,7 +910,7 @@ function ConnectPage({ giver, setGiver, follows, onFollow, onOpen }) {
 
 function ConnectHub({ giver, setGiver, follows, onFollow, onOpen, community, userId, onToast }) {
   const [view, setView] = useState("people");
-  const { people = [], connections = [], error, requestConnection, respondToConnection } = community || {};
+  const { people = [], connections = [], error, requestConnection, respondToConnection, removeConnection } = community || {};
   const connectionFor = (uid) => connections.find((item) => item.participants?.includes(uid));
   const shared = (person) => (giver.causes || []).filter((cause) => (person.causes || []).includes(cause));
   const act = async (action, success) => {
@@ -921,6 +924,14 @@ function ConnectHub({ giver, setGiver, follows, onFollow, onOpen, community, use
     </div>
     {view === "orgs" ? <ConnectPage giver={giver} setGiver={setGiver} follows={follows} onFollow={onFollow} onOpen={onOpen} /> :
       <div style={{ padding: "0 16px 18px" }}>
+        {error && <p role="alert" style={{color:C.rust,fontSize:13}}>{error}</p>}
+        {connections.length>0 && <><SectionRule>Your connections</SectionRule><div style={{display:"grid",gap:10,marginBottom:20}}>{connections.map(connection=>{
+          const incoming=connection.recipientId===userId;
+          const name=incoming ? connection.requesterName || "Volunteer" : connection.recipientName || "Volunteer";
+          return <article key={connection.id} style={{padding:14,border:"1px solid "+C.line,borderRadius:12,background:C.paper2,color:C.cream}}><b>{name}</b><p style={{fontSize:12,color:C.mute}}>{connection.status==="pending" ? incoming ? "Invited you to volunteer together" : "Invitation pending" : connection.status==="accepted" ? "Helping Pair" : "Invitation declined"}</p><div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+          {incoming && connection.status==="pending" && <><button onClick={()=>act(()=>respondToConnection(connection.id,"accepted"),"Invitation accepted")}>Accept</button><button onClick={()=>act(()=>respondToConnection(connection.id,"declined"),"Invitation declined")}>Decline</button></>}
+          <button onClick={()=>{if(window.confirm(connection.status==="pending"?"Cancel this invitation?":"Remove this connection?"))act(()=>removeConnection(connection.id),"Connection removed");}}>{connection.status==="pending" ? "Cancel invitation" : "Remove connection"}</button></div></article>;
+        })}</div></>}
         <SectionRule>Volunteer with someone nearby</SectionRule>
         {!giver.isPublic ? <div style={{ background: C.paper2, border: "1px solid " + C.line, borderRadius: 16, padding: 24, textAlign: "center" }}>
           <ShieldCheck size={34} color={C.pine} />
@@ -948,7 +959,9 @@ function ConnectHub({ giver, setGiver, follows, onFollow, onOpen, community, use
   </div>;
 }
 
-function ProfilePage({ giver, follows, gifts, onEditProfile, onOpenSettings }) {
+export function ProfilePage({ giver, follows, gifts, onFollow, onOpen, onEditProfile, onOpenSettings }) {
+  const followingRef=useRef(null);
+  const pledgesRef=useRef(null);
   const followed = ORGS.filter((o) => follows.has(o.id));
   const counts = {}; followed.forEach((o) => (counts[o.cause] = (counts[o.cause] || 0) + 1));
   const maxC = Math.max(1, ...Object.values(counts));
@@ -966,11 +979,11 @@ function ProfilePage({ giver, follows, gifts, onEditProfile, onOpenSettings }) {
         <div style={{ flex: 1 }}>
           <div style={{ fontFamily: "inherit", fontWeight: 700, fontSize: 20, color: C.cream }}>{giver.displayName || (giver.email ? giver.email.split("@")[0] : "Volunteer")}</div>
           <div style={{ fontSize: 12.5, color: C.mute, display: "flex", alignItems: "center", gap: 5 }}><MapPin size={11} /> {[giver.city, giver.region, geo?.name].filter(Boolean).join(", ") || "Location not set"}</div></div>
-        <button onClick={onOpenSettings} className="sc-tap" style={{ background: "none", border: "1.5px solid " + C.line2, borderRadius: 10, padding: 9, cursor: "pointer" }}><Settings size={18} color={C.cream} /></button></div>
+        <button aria-label="Open settings" onClick={onOpenSettings} className="sc-tap" style={{ background: "none", border: "1.5px solid " + C.line2, borderRadius: 10, padding: 9, cursor: "pointer" }}><Settings size={18} color={C.cream} /></button></div>
       <div style={{ display: "flex", marginBottom: 20, border: "1px solid " + C.line, borderRadius: 12, overflow: "hidden" }}>
-        {stats.map((s, i) => <div key={s.label} style={{ flex: 1, padding: "16px 10px", textAlign: "center", borderLeft: i ? "1px solid " + C.line : "none", background: C.paper2 }}>
+        {stats.map((s, i) => <button key={s.label} aria-label={`View ${s.label.toLowerCase()}`} onClick={() => s.label === "Following" ? followingRef.current?.scrollIntoView({block:"start",behavior:"smooth"}) : s.label === "Pledged" ? pledgesRef.current?.scrollIntoView({block:"start",behavior:"smooth"}) : onEditProfile()} style={{ flex: 1, padding: "16px 10px", textAlign: "center", border:0, borderLeft: i ? "1px solid " + C.line : "none", background: C.paper2, cursor:"pointer" }}>
           <div style={{ fontFamily: "inherit", fontSize: 25, fontWeight: 700, color: s.c }}>{s.value}</div>
-          <div style={{ fontSize: 11, color: C.mute, marginTop: 2 }}>{s.label}</div></div>)}</div>
+          <div style={{ fontSize: 11, color: C.mute, marginTop: 2 }}>{s.label}</div></button>)}</div>
       <button onClick={onEditProfile} className="sc-tap" style={{ width: "100%", textAlign: "left", background: C.paper2, border: "1px solid " + C.line, borderRadius: 12, padding: 14, marginBottom: 22, cursor: "pointer", display: "flex", alignItems: "center", gap: 12 }}>
         <div style={{ flex: 1 }}><div style={{ fontSize: 12.5, fontWeight: 700, color: C.cream, marginBottom: 6 }}>Your giving preferences</div>
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>{giver.causes.slice(0, 4).map((c) => <span key={c} style={{ fontSize: 11, color: CAUSE[c].c, border: "1px solid " + CAUSE[c].c + "66", borderRadius: 5, padding: "2px 7px" }}>{c}</span>)}{giver.causes.length === 0 && <span style={{ fontSize: 12, color: C.mute }}>Nothing selected yet. Tap to choose.</span>}</div></div>
@@ -980,11 +993,12 @@ function ProfilePage({ giver, follows, gifts, onEditProfile, onOpenSettings }) {
         : <div style={{ background: C.paper2, border: "1px solid " + C.line, borderRadius: 12, padding: 16, display: "grid", gap: 13 }}>
           {Object.entries(counts).map(([c, n]) => <div key={c}><div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, marginBottom: 5 }}><span style={{ color: C.cream }}>{c}</span><span style={{ color: C.mute }}>{n}</span></div>
             <div style={{ height: 6, background: C.line2, borderRadius: 3, overflow: "hidden" }}><div style={{ width: (n / maxC) * 100 + "%", height: "100%", background: CAUSE[c].c, transition: "width .5s" }} /></div></div>)}</div>}
-      <div style={{ marginTop: 22 }}><SectionRule>From orgs you follow</SectionRule></div>
+      <div ref={followingRef} style={{ marginTop: 22,scrollMarginTop:14 }}><SectionRule>Following</SectionRule></div>
       <div style={{ display: "grid", gap: 10 }}>
-        {!followed.length && <div style={{ fontSize: 13.5, color: C.mute }}>Updates appear here once you follow.</div>}
+        {!followed.length && <div style={{ fontSize: 13.5, color: C.mute }}>No organizations followed yet. Browse causes and tap Follow to save one here.</div>}
         {followed.map((o) => <div key={o.id} style={{ display: "flex", gap: 11, alignItems: "center", background: C.paper2, border: "1px solid " + C.line, borderRadius: 12, padding: 11 }}>
-          <Crest org={o} size={40} radius={11} /><div style={{ flex: 1, fontSize: 13, color: C.mute }}><b style={{ color: C.cream, fontFamily: "inherit" }}>{o.name}</b><br />Open its profile to see current programs and official ways to help.</div></div>)}</div>
+          <button aria-label={`Open ${o.name}`} onClick={()=>onOpen(o)} style={{display:"flex",alignItems:"center",gap:11,flex:1,minWidth:0,border:0,background:"transparent",textAlign:"left",cursor:"pointer",color:C.cream}}><Crest org={o} size={40} radius={11}/><span style={{fontWeight:700,fontSize:13,overflowWrap:"anywhere"}}>{o.name}</span></button><button aria-label={`Unfollow ${o.name}`} onClick={()=>onFollow(o.id)} style={{border:"1px solid "+C.line2,borderRadius:8,padding:"8px 10px",background:C.card,color:C.mute,cursor:"pointer",fontSize:12}}>Unfollow</button></div>)}</div>
+      <div ref={pledgesRef} style={{marginTop:22,scrollMarginTop:14}}><SectionRule>Saved pledges</SectionRule><p style={{fontSize:12,color:C.mute}}>Sample pledges only. No money is collected.</p>{!gifts.length ? <p style={{fontSize:13,color:C.mute}}>No pledges saved.</p> : gifts.map((gift,i)=><div key={`${gift.id}-${i}`} style={{padding:12,borderBottom:"1px solid "+C.line,color:C.cream,fontSize:13}}>{ORGS.find(o=>o.id===gift.id)?.name || "Sample request"} · ${gift.amt} · {gift.freq}</div>)}</div>
     </div>
   );
 }
@@ -1019,7 +1033,7 @@ function SettingsScreen({ giver, setGiver, onClose, onEditProfile, onSignOut, on
         <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", background: C.paper2, borderBottom: "1px solid " + C.line }}>
           <ShieldCheck size={20} color={giver.isPublic ? C.pine : C.slate} />
           <div style={{ flex: 1 }}><div style={{ fontSize: 13.5, color: C.cream, fontWeight: 600 }}>Public volunteer profile</div><div style={{ fontSize: 12, color: C.mute, marginTop: 2 }}>{giver.isPublic ? "Nearby members can find and pair with you" : "Private by default; nobody can discover you"}</div></div>
-          <button aria-label="Toggle public volunteer profile" onClick={() => { if (PORTFOLIO_DEMO) { onToast("Public discovery requires an account."); return; } const next = !giver.isPublic; setGiver((g) => ({ ...g, isPublic: next })); onToast(next ? "Your volunteer profile is now public" : "Your profile is now private"); }} style={{ width: 46, height: 27, borderRadius: 14, background: giver.isPublic ? C.pine : C.line2, position: "relative", border: "none", cursor: "pointer" }}><div style={{ position: "absolute", top: 3, left: giver.isPublic ? 22 : 3, width: 21, height: 21, borderRadius: "50%", background: "#fff", transition: "left .2s" }} /></button>
+          <button aria-label="Toggle public volunteer profile" onClick={async () => { if (PORTFOLIO_DEMO) { onToast("Public discovery requires an account."); return; } const next = !giver.isPublic; if(await setGiver(g=>({...g,isPublic:next})))onToast(next ? "Your volunteer profile is now public" : "Your profile is now private"); }} style={{ width: 46, height: 27, borderRadius: 14, background: giver.isPublic ? C.pine : C.line2, position: "relative", border: "none", cursor: "pointer" }}><div style={{ position: "absolute", top: 3, left: giver.isPublic ? 22 : 3, width: 21, height: 21, borderRadius: "50%", background: "#fff", transition: "left .2s" }} /></button>
         </div>
         <div style={{ padding: "10px 16px", background: C.paper, borderBottom: "1px solid " + C.line, color: C.faint, fontSize: 11.5, lineHeight: 1.5 }}>Public profiles show only your display name, city/region, causes, and helping preferences. Email and phone are never shared.</div>
         <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", background: C.paper2, borderBottom: "1px solid " + C.line }}>
@@ -1045,6 +1059,7 @@ export default function ShareCompass({ userId, profile, saveProfile, community, 
   const [giveOrg, setGiveOrg] = useState(null);
   const [gifts, setGifts] = useState(profile?.gifts || []);
   const [toast, setToast] = useState("");
+  const [savingCount,setSavingCount]=useState(0);
   const toastRef = useRef();
   const pageScrollRef = useRef();
   const fireToast = (m) => { setToast(m); clearTimeout(toastRef.current); toastRef.current = setTimeout(() => setToast(""), 2200); };
@@ -1054,16 +1069,32 @@ export default function ShareCompass({ userId, profile, saveProfile, community, 
 
   const [giver, setGiverState] = useState(() => ({ email: "", displayName: "", countryCode: "US", phone: "", causes: [], gives: [], region: "", city: "", newsletter: true, region2: "global", urgentOnly: false, isPublic: false, theme: "dark", ...profile }));
   const [follows, setFollows] = useState(() => new Set(profile?.follows || []));
-  const setGiver = (next) => setGiverState((current) => {
-    const value = typeof next === "function" ? next(current) : next;
-    saveProfile?.(value);
-    return value;
-  });
-  const onFollow = (id) => setFollows((p) => {
-    const n = new Set(p); n.has(id) ? n.delete(id) : n.add(id);
-    saveProfile?.({ follows: [...n] });
-    return n;
-  });
+  const giverRef=useRef(giver), followsRef=useRef(follows);
+  const writeQueue=useRef(Promise.resolve());
+  const persist = (patch) => {
+    setSavingCount(n=>n+1);
+    const task=writeQueue.current.catch(()=>{}).then(()=>saveProfile?.(patch)).finally(()=>setSavingCount(n=>Math.max(0,n-1)));
+    writeQueue.current=task;
+    return task;
+  };
+  const setGiver = async (next) => {
+    const previous=giverRef.current;
+    const value=typeof next==="function" ? next(previous) : next;
+    giverRef.current=value;setGiverState(value);
+    try {await persist(Object.fromEntries(Object.entries(value).filter(([key])=>!["follows","gifts","password","_ctext"].includes(key))));return true;} catch {
+      if(giverRef.current===value){giverRef.current=previous;setGiverState(previous);}
+      fireToast("Could not save your preferences. Please try again.");return false;
+    }
+  };
+  const onFollow = async (id) => {
+    const previous=followsRef.current;
+    const next=new Set(previous);next.has(id)?next.delete(id):next.add(id);
+    followsRef.current=next;setFollows(next);
+    try {await persist({follows:[...next]});} catch {
+      if(followsRef.current===next){followsRef.current=previous;setFollows(previous);}
+      fireToast("Could not save your following list. Please try again.");
+    }
+  };
   useEffect(() => {
     if (!giveOrg?.real) return;
     window.open(giveOrg.website || `https://${giveOrg.handle}`, "_blank", "noopener,noreferrer");
@@ -1071,8 +1102,13 @@ export default function ShareCompass({ userId, profile, saveProfile, community, 
     setDetail(null);
   }, [giveOrg]);
 
-  const finishOnboarding = (data) => { const next = { ...giver, ...data, region2: "global", urgentOnly: false, onboarded: true }; setGiverState(next); saveProfile?.(next); setPhase("setup"); setTimeout(() => { setPhase("app"); setTab("home"); fireToast("Welcome to ShareCompass!"); }, 1200); };
-  const finishEdit = (data) => { setGiver((g) => ({ ...g, ...data })); setPhase("app"); setShowSettings(false); fireToast("Preferences updated"); };
+  const finishOnboarding = async (data) => {
+    const next={...giverRef.current,...data,region2:"global",urgentOnly:false,onboarded:true};
+    setPhase("setup");
+    try {await persist(next);giverRef.current=next;setGiverState(next);setPhase("app");setTab("home");fireToast("Welcome to ShareCompass!");}
+    catch {setPhase("onboarding");fireToast("Could not save your profile. Please try again.");}
+  };
+  const finishEdit = async (data) => {if(await setGiver(g=>({...g,...data}))){setPhase("app");setShowSettings(false);fireToast("Preferences updated");}};
 
   const dMatch = detail ? scoreMatch(giver, detail) : null;
   const NAV = [{ id: "home", label: "Home", icon: Home }, { id: "give", label: "Give", icon: Gift }, { id: "connect", label: "Connect", icon: Link2 }, { id: "help", label: "Find Help", icon: HandHeart }, { id: "profile", label: "Profile", icon: User }];
@@ -1089,25 +1125,25 @@ export default function ShareCompass({ userId, profile, saveProfile, community, 
 
   if (phase === "boot") return frame(<Splash label="Loading…" />);
   if (phase === "setup") return frame(<Splash label="Building your matches…" />);
-  if (phase === "onboarding") return frame(<div className="sc-page" style={{ height: "100%" }}><Onboarding onComplete={finishOnboarding} /></div>);
+  if (phase === "onboarding") return frame(<div className="sc-page" style={{ height: "100%" }}><Onboarding initial={giver} onComplete={finishOnboarding} /></div>);
   if (phase === "editProfile") return frame(<div className="sc-page" style={{ height: "100%" }}><Onboarding initial={giver} onComplete={finishEdit} /></div>);
 
   if (giveOrg?.real) return frame(<Splash label={`Opening ${giveOrg.name}…`} />);
-  if (giveOrg) return frame(<GiveFlow org={giveOrg} onClose={() => setGiveOrg(null)} onDone={(amt, freq, org) => { const next = [...gifts, { amt, freq, id: org.id, createdAt: Date.now() }]; setGifts(next); saveProfile?.({ gifts: next }); setGiveOrg(null); setDetail(null); fireToast(`Support pledge for ${org.name} saved`); }} />);
+  if (giveOrg) return frame(<GiveFlow org={giveOrg} onClose={() => setGiveOrg(null)} onDone={async (amt, freq, org) => { const next = [...gifts, { amt, freq, id: org.id, createdAt: Date.now() }]; await persist({gifts:next});setGifts(next); setGiveOrg(null); setDetail(null); fireToast(`Support pledge for ${org.name} saved`); }} />);
 
   if (showSettings) return frame(<SettingsScreen giver={giver} setGiver={setGiver} onClose={() => setShowSettings(false)} onEditProfile={() => { setShowSettings(false); setPhase("editProfile"); }} onSignOut={onSignOut} onToast={fireToast} />);
 
   return frame(<>
     <div style={{ padding: "16px 18px 12px", background: C.paper2, color: C.cream, display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid " + C.line }}>
       <div style={{ display: "flex", alignItems: "center", gap: 9 }}><Compass size={20} color={C.ember} /><span style={{ fontFamily: "inherit", fontWeight: 700, fontSize: 18 }}>ShareCompass</span></div>
-      <span style={{ fontSize: 10, color: C.mute, border: "1px solid " + C.line2, padding: "2px 7px", borderRadius: 4, letterSpacing: 1 }}>V2.2</span></div>
+      <span role="status" style={{ fontSize: 10, color: C.mute, border: "1px solid " + C.line2, padding: "2px 7px", borderRadius: 4, letterSpacing: 1 }}>{savingCount>0 ? "Saving…" : "V2.2"}</span></div>
     <div ref={pageScrollRef} style={{ flex: 1, minHeight: 0, overflowY: "auto", scrollPaddingTop: 14 }}>
       <div key={tab} className="sc-page" style={{ minHeight: "100%" }}>
         {tab === "home" && <HomePage giver={giver} follows={follows} onFollow={onFollow} onOpen={setDetail} />}
         {tab === "give" && <GivePage giver={giver} follows={follows} onFollow={onFollow} onOpen={setDetail} />}
         {tab === "connect" && <ConnectHub giver={giver} setGiver={setGiver} follows={follows} onFollow={onFollow} onOpen={setDetail} community={community} userId={userId} onToast={fireToast} />}
         {tab === "help" && <FindHelpPage follows={follows} onFollow={onFollow} onOpen={setDetail} />}
-        {tab === "profile" && <ProfilePage giver={giver} follows={follows} gifts={gifts} onEditProfile={() => setPhase("editProfile")} onOpenSettings={() => setShowSettings(true)} />}
+        {tab === "profile" && <ProfilePage giver={giver} follows={follows} gifts={gifts} onFollow={onFollow} onOpen={setDetail} onEditProfile={() => setPhase("editProfile")} onOpenSettings={() => setShowSettings(true)} />}
       </div>
     </div>
     <div style={{ display: "flex", flexShrink: 0, position: "relative", zIndex: 2, paddingTop: 6, borderTop: "1px solid " + C.line, background: C.paper2 }}>
@@ -1117,7 +1153,7 @@ export default function ShareCompass({ userId, profile, saveProfile, community, 
             <I size={center ? 22 : 20} color={center ? "#fff" : active ? C.ember : C.faint} /></div>
           <span style={{ fontSize: 10, fontWeight: 600, color: active ? C.ember : C.faint }}>{n.label}</span></button>); })}
     </div>
-    <DetailSheet org={detail} match={dMatch} following={detail && follows.has(detail.id)} onFollow={onFollow} onClose={() => setDetail(null)} onGive={(o) => setGiveOrg(o)} />
+    <DetailSheet org={detail} match={dMatch} following={detail && follows.has(detail.id)} onFollow={onFollow} onClose={() => setDetail(null)} onGive={(o) => {if(o.real){window.open(o.website || `https://${o.handle}`,"_blank","noopener,noreferrer");}else setGiveOrg(o);}} />
   </>);
 }
 

@@ -1,78 +1,44 @@
-// src/useProfile.js
-// The Firebase data layer for ShareCompass, in one place.
-// Owns: who's logged in, and their profile / follows / gifts in Firestore.
-import { useState, useEffect, useCallback } from "react";
-import { auth, db } from "./firebase";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { auth, db } from "./firebase.js";
 import { onAuthStateChanged } from "firebase/auth";
-import { deleteDoc, doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
+import { doc, onSnapshot, serverTimestamp, writeBatch } from "firebase/firestore";
 
-// The shape we store per user. Mirrors the app's in-memory `giver` + follows + gifts.
-const EMPTY = {
-  email: "", displayName: "", countryCode: "US", phone: "", causes: [], gives: [],
-  region: "", city: "", newsletter: true, region2: "global",
-  follows: [], gifts: [], onboarded: false, isPublic: false, theme: "dark",
-};
-
-const publicProfile = (uid, profile) => ({
-  uid,
-  isPublic: true,
-  displayName: profile.displayName || "ShareCompass neighbor",
-  countryCode: profile.countryCode || "US",
-  region: profile.region || "",
-  city: profile.city || "",
-  causes: profile.causes || [],
-  gives: profile.gives || [],
-  updatedAt: serverTimestamp(),
-});
-
+const EMPTY = {email:"",displayName:"",countryCode:"US",phone:"",causes:[],gives:[],region:"",city:"",newsletter:false,region2:"global",follows:[],gifts:[],onboarded:false,isPublic:false,theme:"dark"};
+const ALLOWED=new Set(Object.keys(EMPTY));
+export function cleanProfilePatch(patch) {return Object.fromEntries(Object.entries(patch).filter(([key])=>ALLOWED.has(key)));}
+export function visibleProfile(uid, profile) {
+  return {uid,isPublic:true,displayName:profile.displayName || "ShareCompass neighbor",countryCode:profile.countryCode || "US",region:profile.region || "",city:profile.city || "",causes:profile.causes || [],gives:profile.gives || [],updatedAt:serverTimestamp()};
+}
 export function useProfile() {
-  const [user, setUser] = useState(undefined); // undefined = still checking, null = logged out
-  const [profile, setProfile] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  // Track auth state.
-  useEffect(() => {
-    return onAuthStateChanged(auth, (u) => setUser(u || null));
-  }, []);
-
-  // When the user changes, load their profile from Firestore.
-  useEffect(() => {
-    if (user === undefined) return;          // still checking
-    if (user === null) { setProfile(null); setLoading(false); return; }
-    let cancelled = false;
-    (async () => {
-      setLoading(true);
-      try {
-        const snap = await getDoc(doc(db, "users", user.uid));
-        const data = snap.exists() ? snap.data() : {};
-        if (!cancelled) setProfile({ ...EMPTY, email: user.email, ...data });
-      } catch (e) {
-        console.error("Profile load failed:", e);
-        if (!cancelled) setProfile({ ...EMPTY, email: user.email });
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => { cancelled = true; };
-  }, [user]);
-
-  // Save a partial update to Firestore (merges, doesn't overwrite the whole doc).
-  const saveProfile = useCallback(async (patch) => {
-    if (!user) return;
-    const next = { ...(profile || EMPTY), ...patch };
-    setProfile(next);
-    try {
-      await setDoc(doc(db, "users", user.uid), patch, { merge: true });
-      if (next.isPublic) {
-        await setDoc(doc(db, "publicProfiles", user.uid), publicProfile(user.uid, next));
-      } else {
-        await deleteDoc(doc(db, "publicProfiles", user.uid));
-      }
-    } catch (e) {
-      console.error("Profile save failed:", e);
-      throw e;
-    }
-  }, [profile, user]);
-
-  return { user, profile, loading, saveProfile };
+  const [user,setUser]=useState(undefined);
+  const [profile,setProfile]=useState(null);
+  const [loading,setLoading]=useState(true);
+  const [error,setError]=useState("");
+  const [retry,setRetry]=useState(0);
+  const current=useRef(null), queue=useRef(Promise.resolve());
+  useEffect(()=>onAuthStateChanged(auth,u=>{current.current=null;setProfile(null);setLoading(Boolean(u));setError("");setUser(u || null);}),[]);
+  useEffect(()=>{
+    if(!user)return undefined;
+    setLoading(true);setError("");
+    return onSnapshot(doc(db,"users",user.uid),snapshot=>{
+      const next={...EMPTY,email:user.email,...(snapshot.exists()?snapshot.data():{})};
+      current.current=next;setProfile(next);setLoading(false);setError("");
+    },()=>{setLoading(false);setError("Your saved profile could not be loaded. Please retry before making changes.");});
+  },[user,retry]);
+  const saveProfile=useCallback(input=>{
+    const patch=cleanProfilePatch(input);
+    const task=queue.current.catch(()=>{}).then(async()=>{
+      if(!user || auth.currentUser?.uid!==user.uid || !current.current)throw new Error("Sign in and load your profile before saving.");
+      const next={...current.current,...patch};
+      const batch=writeBatch(db);
+      batch.set(doc(db,"users",user.uid),patch,{merge:true});
+      if(next.isPublic)batch.set(doc(db,"publicProfiles",user.uid),visibleProfile(user.uid,next));
+      else batch.delete(doc(db,"publicProfiles",user.uid));
+      await batch.commit();
+      if(auth.currentUser?.uid===user.uid){current.current=next;setProfile(next);}
+    });
+    queue.current=task;
+    return task;
+  },[user]);
+  return {user,profile,loading,error,saveProfile,retryProfile:()=>setRetry(n=>n+1)};
 }
