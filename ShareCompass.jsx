@@ -8,8 +8,7 @@ import {
 } from "lucide-react";
 import { EXTRA_ORGS } from "./organizations.js";
 import { US_CITIES_BY_STATE, US_STATES } from "./usCities.js";
-import { sendPasswordResetEmail } from "firebase/auth";
-import { auth } from "./firebase.js";
+const PORTFOLIO_DEMO = import.meta.env.VITE_PORTFOLIO_DEMO === "true";
 
 /* Organization discovery, sample pledges and community connections. */
 
@@ -925,8 +924,8 @@ function ConnectHub({ giver, setGiver, follows, onFollow, onOpen, community, use
         <SectionRule>Volunteer with someone nearby</SectionRule>
         {!giver.isPublic ? <div style={{ background: C.paper2, border: "1px solid " + C.line, borderRadius: 16, padding: 24, textAlign: "center" }}>
           <ShieldCheck size={34} color={C.pine} />
-          <div style={{ fontFamily: "inherit", fontWeight: 700, fontSize: 19, marginTop: 10, color: C.cream }}>Your profile is private</div>
-          <p style={{ color: C.mute, fontSize: 13.5, lineHeight: 1.55 }}>Nobody can find or request to pair with you. Turn on public discovery in Settings when you want to meet nearby volunteers.</p>
+          <div style={{ fontFamily: "inherit", fontWeight: 700, fontSize: 19, marginTop: 10, color: C.cream }}>{PORTFOLIO_DEMO ? "Connect with an account" : "Your profile is private"}</div>
+          <p style={{ color: C.mute, fontSize: 13.5, lineHeight: 1.55 }}>{PORTFOLIO_DEMO ? "Helping Pair requires a signed-in account. You can explore organizations in the other tab." : "Nobody can find or request to pair with you. Turn on public discovery in Settings when you want to meet nearby volunteers."}</p>
         </div> : <>
           <div style={{ background: C.pine + "18", border: "1px solid " + C.pine + "55", borderRadius: 12, padding: 13, marginBottom: 16, color: C.mute, fontSize: 12.5, lineHeight: 1.5 }}><b style={{ color: C.cream }}>Public discovery is on.</b> People only see your display name, general area, causes, and ways you help. Your email and phone stay private.</div>
           {error && <div style={{ color: C.rust, fontSize: 13, marginBottom: 12 }}>{error}</div>}
@@ -1006,7 +1005,7 @@ function SettingsScreen({ giver, setGiver, onClose, onEditProfile, onSignOut, on
         <div style={{ padding: "16px 16px 8px", fontSize: 11, letterSpacing: 1, color: C.faint }}>ACCOUNT</div>
         <Row label="Email" value={giver.email || "Not set"} />
         <Row label="Phone" value={giver.phone ? `${geo?.dial || ""} ${giver.phone}` : "Not set"} />
-        <Row label="Password" value="Send a secure reset email" onClick={async () => { try { await sendPasswordResetEmail(auth, giver.email); onToast("Password reset email sent"); } catch { onToast("Could not send reset email. Try again."); } }} />
+        <Row label="Password" value="Send a secure reset email" onClick={async () => { if (PORTFOLIO_DEMO) { onToast("Password reset requires an account."); return; } try { const { sendPasswordResetEmail } = await import("firebase/auth"); const { auth } = await import("./firebase.js"); await sendPasswordResetEmail(auth, giver.email); onToast("Password reset email sent"); } catch { onToast("Could not send reset email. Try again."); } }} />
         <div style={{ padding: "16px 16px 8px", fontSize: 11, letterSpacing: 1, color: C.faint }}>GIVING</div>
         <Row label="Causes you care about" value={giver.causes.join(", ") || "None"} onClick={onEditProfile} />
         <Row label="How you give" value={giver.gives.join(", ") || "None"} onClick={onEditProfile} />
@@ -1020,16 +1019,16 @@ function SettingsScreen({ giver, setGiver, onClose, onEditProfile, onSignOut, on
         <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", background: C.paper2, borderBottom: "1px solid " + C.line }}>
           <ShieldCheck size={20} color={giver.isPublic ? C.pine : C.slate} />
           <div style={{ flex: 1 }}><div style={{ fontSize: 13.5, color: C.cream, fontWeight: 600 }}>Public volunteer profile</div><div style={{ fontSize: 12, color: C.mute, marginTop: 2 }}>{giver.isPublic ? "Nearby members can find and pair with you" : "Private by default; nobody can discover you"}</div></div>
-          <button aria-label="Toggle public volunteer profile" onClick={() => { const next = !giver.isPublic; setGiver((g) => ({ ...g, isPublic: next })); onToast(next ? "Your volunteer profile is now public" : "Your profile is now private"); }} style={{ width: 46, height: 27, borderRadius: 14, background: giver.isPublic ? C.pine : C.line2, position: "relative", border: "none", cursor: "pointer" }}><div style={{ position: "absolute", top: 3, left: giver.isPublic ? 22 : 3, width: 21, height: 21, borderRadius: "50%", background: "#fff", transition: "left .2s" }} /></button>
+          <button aria-label="Toggle public volunteer profile" onClick={() => { if (PORTFOLIO_DEMO) { onToast("Public discovery requires an account."); return; } const next = !giver.isPublic; setGiver((g) => ({ ...g, isPublic: next })); onToast(next ? "Your volunteer profile is now public" : "Your profile is now private"); }} style={{ width: 46, height: 27, borderRadius: 14, background: giver.isPublic ? C.pine : C.line2, position: "relative", border: "none", cursor: "pointer" }}><div style={{ position: "absolute", top: 3, left: giver.isPublic ? 22 : 3, width: 21, height: 21, borderRadius: "50%", background: "#fff", transition: "left .2s" }} /></button>
         </div>
         <div style={{ padding: "10px 16px", background: C.paper, borderBottom: "1px solid " + C.line, color: C.faint, fontSize: 11.5, lineHeight: 1.5 }}>Public profiles show only your display name, city/region, causes, and helping preferences. Email and phone are never shared.</div>
         <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", background: C.paper2, borderBottom: "1px solid " + C.line }}>
-          <div style={{ flex: 1 }}><div style={{ fontSize: 13.5, color: C.cream, fontWeight: 600 }}>Monthly newsletter</div><div style={{ fontSize: 12, color: C.mute, marginTop: 2 }}>{giver.newsletter ? "Subscribed" : "Not subscribed"}</div></div>
-          <button onClick={() => { setGiver((g) => ({ ...g, newsletter: !g.newsletter })); onToast(giver.newsletter ? "Unsubscribed" : "Subscribed to newsletter"); }} style={{ width: 46, height: 27, borderRadius: 14, background: giver.newsletter ? C.pine : C.line2, position: "relative", border: "none", cursor: "pointer" }}>
+          <div style={{ flex: 1 }}><div style={{ fontSize: 13.5, color: C.cream, fontWeight: 600 }}>Monthly newsletter</div><div style={{ fontSize: 12, color: C.mute, marginTop: 2 }}>{giver.newsletter ? "Preference saved" : "Not selected"}</div></div>
+          <button onClick={() => { setGiver((g) => ({ ...g, newsletter: !g.newsletter })); onToast("Newsletter preference saved; no subscription started"); }} style={{ width: 46, height: 27, borderRadius: 14, background: giver.newsletter ? C.pine : C.line2, position: "relative", border: "none", cursor: "pointer" }}>
             <div style={{ position: "absolute", top: 3, left: giver.newsletter ? 22 : 3, width: 21, height: 21, borderRadius: "50%", background: "#fff", transition: "left .2s" }} /></button></div>
         <div style={{ padding: 16 }}>
           <button onClick={onSignOut} className="sc-tap" style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: 14, borderRadius: 11, border: "1.5px solid " + C.rust, background: "transparent", color: C.ember, fontWeight: 700, fontSize: 14, cursor: "pointer" }}>
-            <LogOut size={17} /> Sign out</button></div>
+            <LogOut size={17} /> {PORTFOLIO_DEMO ? "Reset demo" : "Sign out"}</button></div>
       </div>
     </div>
   );
@@ -1121,3 +1120,4 @@ export default function ShareCompass({ userId, profile, saveProfile, community, 
     <DetailSheet org={detail} match={dMatch} following={detail && follows.has(detail.id)} onFollow={onFollow} onClose={() => setDetail(null)} onGive={(o) => setGiveOrg(o)} />
   </>);
 }
+
