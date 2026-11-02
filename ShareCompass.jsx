@@ -177,7 +177,7 @@ const addBrandAssets = (org) => {
 // Retain original IDs, follows, and entries. Only explicitly domestic locations
 // establish country coverage for legacy entries; "Global" is not a country list.
 const legacy = [...CORE_ORGS, ...EXTRA_ORGS].map(org => ({ ...org,
-  operatingCountries: /USA|United States|United Kingdom|India|Bangladesh/.test(org.loc) ? [org.country] : [],
+  operatingCountries: org.operatingCountries ?? (/USA|United States|United Kingdom|India|Bangladesh/.test(org.loc) ? [org.country] : []),
   operatingCities: [],
 }));
 export const ORGS = [...legacy, ...GLOBAL_ORGS].map(addBrandAssets);
