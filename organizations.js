@@ -74,4 +74,12 @@ export const EXTRA_ORGS = [
   org(164, "Last Mile Health", "lastmilehealth.org", "Africa", "US", "Health", ["Money", "Time"]),
   org(165, "mothers2mothers", "m2m.org", "Africa", "ZA", "Health", ["Money", "Time"]),
   org(166, "GiveDirectly", "givedirectly.org", "Global", "US", "Disaster", ["Money"], true),
+  {
+    ...org(167, "Against Malaria Foundation", "againstmalaria.com", "Guinea, DR Congo and South Sudan", "GB", "Health", ["Money"]),
+    operatingCountries: ["GN", "CD", "SS"],
+    sourceName: "Against Malaria Foundation",
+    sourceUrl: "https://www.againstmalaria.com/",
+    sourceCheckedAt: "2026-11-02",
+    blurb: "Funds mosquito nets through distribution partners. Its official site lists distributions in Guinea, DR Congo and South Sudan. Check the organization's website for current programs and donation options.",
+  },
 ];

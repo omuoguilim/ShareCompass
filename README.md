@@ -21,7 +21,7 @@ I keep the portfolio demo separate from account mode. Its preferences and follow
 
 ## The directory
 
-The catalog contains 579 entries, including one sample community request. I added 500 distinct organizations from public GlobalGiving project listings on October 1, 2026, covering projects in 111 countries, including 49 organizations with listed projects in Nigeria. I kept the existing entries and IDs.
+The catalog contains 579 organizations plus one sample community request (580 entries). I added 500 distinct organizations from public GlobalGiving project listings on October 1, 2026, covering projects in 111 countries, including 49 organizations with listed projects in Nigeria. I kept the existing entries and IDs. On November 2 I added Against Malaria Foundation using its official website and explicitly listed distribution countries; its UK headquarters does not establish UK program coverage.
 
 I match countries using listed project locations rather than headquarters. Country results require confirmed country coverage; city results require explicit city coverage. Worldwide results put the selected country first. I only mark the added fundraising projects as supporting money contributions, rather than guessing whether they accept goods or volunteers.
 
@@ -30,6 +30,8 @@ The catalog is a stored snapshot, not a live availability feed. I link to the of
 I use photographs published by the organization or attached to its specific GlobalGiving project. Each detail page links to the photo source. Otherwise, I leave the photo out. The images remain on their publishers’ servers, and an unavailable image is hidden instead of replaced with a generic photo. The cause picker has separately credited photographs in [public/credits.html](public/credits.html).
 
 ## A few things I like to test
+
+I also test navigation by asserting the actual destination content for Home, Give, Find Help, Connect and Profile, checking the previous screen disappears and returning to the profile retains followed organizations. A catalog test counts organizations separately from sample requests. The suite now has 28 tests across seven files.
 
 I switch between two causes to compare the matching explanations, set a country to check the directory filters, and follow an organization before reopening the Following list and unfollowing it. For Helping Pair, I use two test accounts to check invitations, acceptance and discovery privacy.
 
